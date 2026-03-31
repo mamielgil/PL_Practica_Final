@@ -64,22 +64,34 @@ typedef struct s_attr {
 
 %%                            // Seccion 3 Gramatica - Semantico
 
-axioma:       sentencia ';'              { printf ("%s\n", $1.code) ; }
-                r_axioma                 { ; }
+axioma:       dec_glob ';' r_axioma      { printf ("%s\n", $1.code) ; }
+            | dec_main '}'               { ; }
             ;
 
 r_axioma:                                { ; }
             |   axioma                   { ; }
             ;
 
+dec_glob:     dec_var                   { $$.code = $1.code; } // Dejamos esta redenominación para usarla después como declarador de funciones
+            ;
+
+dec_main:     MAIN '(' ')' '{' r_sentencia     { sprintf(temp, "(defun %s () \n %s \n)", $1.code, $5.code); 
+                                                                $$.code = gen_code(temp) ;          }
+            ;
+
+r_sentencia: 
+            | sentencia ';' r_sentencia        { sprintf(temp, "%s \n %s", $1.code, $3.code);
+                                                                $$.code = gen_code(temp);}
+            ;
+
 sentencia:    IDENTIF '=' expresion      { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ; 
                                            $$.code = gen_code (temp) ; }
-            | INTEGER global {$$.code = $2.code;}
+            | INTEGER dec_var {$$.code = $2.code;}
             | '@' expresion              { sprintf (temp, "(print %s)", $2.code) ;  
                                            $$.code = gen_code (temp) ; }
             ;
 
-global:
+dec_var:
      IDENTIF continue_ID {sprintf(temp, "(setq %s %s", $1.code, $2.code);
                                 $$.code = gen_code(temp);}
 
@@ -90,7 +102,7 @@ continue_ID:   continue_comma {sprintf(temp, "0)\n%s", $1.code);
                                     $$.code = gen_code(temp); }
         ;
 
-continue_comma:  ',' global { $$.code = $2.code;}
+continue_comma:  ',' dec_var { $$.code = $2.code;}
         | { $$.code = "";}
 
         ;     
