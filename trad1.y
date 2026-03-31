@@ -63,14 +63,10 @@ typedef struct s_attr {
 %token PRINTF       // identifica la palabra clave printf para princ
 %token AND          // identifica el operador &&
 %token OR          // identifica el operador ||
-%token NOT         // identifica el operador !
 %token NOT_EQUAL    // identifica el operador !=
 %token EQUAL      // identifica el operador ==
-%token LESS        //identifica el operador <
 %token LOE         //identifica el operador <=
-%token GREATER      //identifica el operador >
-%token GOE          //identifica el operador >=
-%token MOD          // identifica el operador %     
+%token GOE          //identifica el operador >=   
 
 // DEFINIMOS AQUI LA ASOCIATIVIDAD DE LOS OPERADORES
 
@@ -78,10 +74,10 @@ typedef struct s_attr {
 %left OR
 %left AND
 %left EQUAL NOT_EQUAL
-%left  LESS LOE GREATER GOE
+%left  '<' LOE '>' GOE
 %left '+' '-'                 // menor orden de precedencia
-%left '*' '/' MOD                // orden de precedencia intermedio
-%left UNARY_SIGN NOT             // mayor orden de precedencia
+%left '*' '/' '%'                // orden de precedencia intermedio
+%left UNARY_SIGN '!'            // mayor orden de precedencia
 
 %%                            // Seccion 3 Gramatica - Semantico
 
@@ -147,7 +143,7 @@ continue_comma:  ',' dec_var { $$.code = $2.code;}
 
         ;     
 
-expresion:      termino                  { $$.code = $1.code;}
+expresion:      termino                  { $$ = $1;}
             | expresion AND expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
@@ -160,19 +156,19 @@ expresion:      termino                  { $$.code = $1.code;}
             | expresion EQUAL expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
-            | expresion LESS expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
+            | expresion '<' expresion { sprintf (temp, "(< %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
-            | expresion LOE expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
+            | expresion LOE expresion { sprintf (temp, "(%s %s %s)", $2.code , $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
-            | expresion GREATER expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
+            | expresion '>' expresion { sprintf (temp, "(> %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
-            | expresion GOE expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
+            | expresion GOE expresion { sprintf (temp, "(%s %s %s)", $2.code ,$1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
-            | expresion MOD expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
+            | expresion '%' expresion { sprintf (temp, "(%c %s %s)", '%', $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
             
             |   expresion '+' expresion  { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
@@ -192,7 +188,7 @@ termino:        operando                           { $$ = $1 ; }
             |   '+' operando %prec UNARY_SIGN      { $$ = $1 ; }
             |   '-' operando %prec UNARY_SIGN      { sprintf (temp, "(- %s)", $2.code);
                                                      $$.code = gen_code (temp) ; }
-            |   NOT operando                         { sprintf (temp, "(%s %s)", $1.code, $2.code) ;
+            |   '!' operando                         { sprintf (temp, "(! %s)", $2.code) ;
                                                         $$.code = gen_code (temp) ; }  
             ;
 
@@ -200,7 +196,7 @@ operando:       IDENTIF                  { sprintf (temp, "%s", $1.code) ;
                                            $$.code = gen_code (temp) ; }
             |   NUMBER                   { sprintf (temp, "%d", $1.value) ;
                                            $$.code = gen_code (temp) ; }
-            |   '(' expresion ')'        { $$.code = $2.code ; }
+            |   '(' expresion ')'        { $$ = $2 ; }
             ;
 
 
@@ -269,14 +265,10 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "printf",      PRINTF, 
     "&&",           AND,
     "||",           OR,
-    "! ",            NOT,
     "!=",           NOT_EQUAL,
     "==",           EQUAL,
-    "< ",            LESS,
     "<=",           LOE,
-    "> ",            GREATER,
     ">=",           GOE,
-    "% ",            MOD,
     NULL,          0               // para marcar el fin de la tabla
 } ;
 
