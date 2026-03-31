@@ -55,7 +55,7 @@ typedef struct s_attr {
 %token MAIN          // identifica el comienzo del proc. main
 %token WHILE         // identifica el bucle main
 %token PUTS          // identifica la palabra clave puts para el print
-
+%token PRINTF       // identifica la palabra clave printf para princ
 
 
 %right '='                    // es la ultima operacion que se debe realizar
@@ -88,12 +88,24 @@ r_sentencia:                                    {$$.code = gen_code("");}
 
 sentencia:    IDENTIF '=' expresion      { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ; 
                                            $$.code = gen_code (temp) ; }
-            | '@' expresion              { sprintf (temp, "(print %s)", $2.code) ;  
+            | PRINTF '(' printf_param ')' { sprintf (temp, "%s", $3.code) ;  
                                            $$.code = gen_code (temp) ; }
             | PUTS '(' STRING ')'       {  sprintf(temp,"(print \"%s\")",$3.code);
                                             $$.code = gen_code(temp);}
             ;
 
+printf_param:
+    
+    STRING printf_cont {$$.code = $2.code;}
+    ;
+
+printf_cont: {$$.code = gen_code("");}
+    | ',' expresion printf_cont { sprintf(temp,"princ(%s)\n%s", $2.code, $3.code);
+                            $$.code = gen_code(temp);}
+    | ',' STRING printf_cont { sprintf(temp,"princ(\"%s\")\n%s", $2.code, $3.code);
+                            $$.code = gen_code(temp);}
+   ;
+   
 dec_var:
      IDENTIF continue_ID {sprintf(temp, "(setq %s %s", $1.code, $2.code);
                                 $$.code = gen_code(temp);}
@@ -196,6 +208,7 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "main",        MAIN,           // y los token asociados
     "int",         INTEGER,
     "puts",        PUTS,
+    "printf",      PRINTF, 
     NULL,          0               // para marcar el fin de la tabla
 } ;
 
