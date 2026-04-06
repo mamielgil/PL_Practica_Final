@@ -7,6 +7,8 @@ ACORDARSE SOLUCIONAR \n de más al leer lambda en princ
 PREGUNTAR RESPECTO A ASOCIATIVIDAD EN EL BLOG PONE QUE UNARY ES DE RIGHT-TO-LEFT 
 AL IGUAL QUE OPERADOR NOT PERO LO TIENEN DEFINIDO COMO LEFT
 
+ASUMIMOS QUE EL MAIN NO PUEDE ESTAR VACIO -> PREGUNTAR A LA PROFE
+
 */
 
 %{                          // SECCION 1 Declaraciones de C-Yacc
@@ -67,6 +69,8 @@ typedef struct s_attr {
 %token EQUAL      // identifica el operador ==
 %token LOE         //identifica el operador <=
 %token GOE          //identifica el operador >=   
+%token IF           //identifica el operador IF
+%token ELSE         //identifica el operador ELSE
 
 // DEFINIMOS AQUI LA ASOCIATIVIDAD DE LOS OPERADORES
 
@@ -97,19 +101,47 @@ dec_main:     MAIN '(' ')' '{' r_sentencia     { sprintf(temp, "(defun %s () \n 
                                                 $$.code = gen_code(temp) ;          }
             ;
 
-r_sentencia:                                    {$$.code = gen_code("");}
-            | sentencia ';' r_sentencia        { sprintf(temp, "%s \n %s", $1.code, $3.code);
+r_sentencia:                          {$$.code = gen_code("\n");}
+            | r_sentencia sentencia   { sprintf(temp, "%s \n %s", $1.code, $2.code);
                                                                 $$.code = gen_code(temp);}
-            | WHILE expresion  while_cont r_sentencia  { sprintf(temp,"(loop %s %s do %s)\n%s", $1.code, $2.code, $3.code, $4.code);
-                             $$.code = gen_code(temp);}
             ;
 
-sentencia:    IDENTIF '=' expresion      { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ; 
+if_cont: '{' if_sentencia '}' else_cont { sprintf(temp,"\n%s\n%s", $2.code, $4.code);
+                                        $$.code = gen_code(temp);}
+
+;
+
+if_sentencia: 
+        sentencia { $$.code = $1.code;}
+        | multiples_sentencias { sprintf(temp, "(progn %s)",$1.code);
+                                $$.code = gen_code(temp);}
+;
+
+multiples_sentencias:
+        sentencia sentencia {sprintf(temp, "%s \n %s",$1.code, $2.code);
+                            $$.code = gen_code(temp);}
+
+        | multiples_sentencias sentencia {sprintf(temp, "%s \n %s",$1.code, $2.code);
+                            $$.code = gen_code(temp);}
+        ;
+
+else_cont:   {$$.code = gen_code("\n");}
+        | ELSE '{' if_sentencia '}' { sprintf(temp, "%s\n", $3.code);
+                                    $$.code = gen_code(temp);}
+    ;
+
+sentencia:    IDENTIF '=' expresion ';'      { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ; 
                                            $$.code = gen_code (temp) ; }
-            | PRINTF '(' printf_param ')' { sprintf (temp, "%s", $3.code) ;  
+            | PRINTF '(' printf_param ')' ';' { sprintf (temp, "%s", $3.code) ;  
                                            $$.code = gen_code (temp) ; }
-            | PUTS '(' STRING ')'       {  sprintf(temp,"(print \"%s\")",$3.code);
+            | PUTS '(' STRING ')' ';'       {  sprintf(temp,"(print \"%s\")",$3.code);
                                             $$.code = gen_code(temp);}
+
+            | WHILE expresion  while_cont  { sprintf(temp,"(loop %s %s do %s)", $1.code, $2.code, $3.code);
+                             $$.code = gen_code(temp);}
+
+            | IF expresion if_cont          { sprintf(temp, "(%s %s %s)",$1.code, $2.code, $3.code);
+                                                $$.code = gen_code(temp);}
             ;
 
 while_cont:
@@ -121,9 +153,9 @@ printf_param:
     ;
 
 printf_cont: {$$.code = gen_code("");}
-    | ',' expresion printf_cont { sprintf(temp,"princ(%s)\n%s", $2.code, $3.code);
+    | ',' expresion printf_cont { sprintf(temp,"(princ %s)\n%s", $2.code, $3.code);
                             $$.code = gen_code(temp);}
-    | ',' STRING printf_cont { sprintf(temp,"princ(\"%s\")\n%s", $2.code, $3.code);
+    | ',' STRING printf_cont { sprintf(temp,"(princ \"%s\")\n%s", $2.code, $3.code);
                             $$.code = gen_code(temp);}
    ;
    
@@ -144,16 +176,16 @@ continue_comma:  ',' dec_var { $$.code = $2.code;}
         ;     
 
 expresion:      termino                  { $$ = $1;}
-            | expresion AND expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
+            | expresion AND expresion { sprintf (temp, "(and %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
-            | expresion OR expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
+            | expresion OR expresion { sprintf (temp, "(or %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
-            | expresion NOT_EQUAL expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
+            | expresion NOT_EQUAL expresion { sprintf (temp, "(/= %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
-            | expresion EQUAL expresion { sprintf (temp, "(%s %s %s)", $2.code, $1.code, $3.code) ;
+            | expresion EQUAL expresion { sprintf (temp, "(= %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
             | expresion '<' expresion { sprintf (temp, "(< %s %s)", $1.code, $3.code) ;
@@ -168,7 +200,7 @@ expresion:      termino                  { $$ = $1;}
             | expresion GOE expresion { sprintf (temp, "(%s %s %s)", $2.code ,$1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
 
-            | expresion '%' expresion { sprintf (temp, "(%c %s %s)", '%', $1.code, $3.code) ;
+            | expresion '%' expresion { sprintf (temp, "(mod %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
             
             |   expresion '+' expresion  { sprintf (temp, "(+ %s %s)", $1.code, $3.code) ;
@@ -269,6 +301,8 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "==",           EQUAL,
     "<=",           LOE,
     ">=",           GOE,
+    "if",           IF,
+    "else",         ELSE,
     NULL,          0               // para marcar el fin de la tabla
 } ;
 
