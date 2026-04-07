@@ -40,6 +40,7 @@ main(){
     }
 
     if(w > 7){
-        printf("Probando variables locales");
+        printf("Probando variables locales","Hola",a * 6+7);
+        printf("%d",b && 7+8, c / b + w, "Como estamos");
     }
 }

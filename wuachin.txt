@@ -1,7 +1,0 @@
-int a;
-int b = 3,c,d;
-main(){
-    int a = 4;
-    a = a + 1;
-    printf("%d",a+1);
-}

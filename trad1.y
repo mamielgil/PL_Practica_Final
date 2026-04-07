@@ -13,6 +13,9 @@ QUE PREFIEREN SI DEJAR RECURSIVIDAD IZQ O DERECHA O DA IGUAL
 PREGUNTAR SI SE PUEDE USAR VARIABLE GLOBAL PARA SABER SI ESTAS DENTRO DEL MAIN O NO 
 PARA PODER REUSAR IMPLEMENTACION VARIABLES GLOBALES
 
+PREGUNTAR PRINTF SI PODEMOS TENER UNA SOLA STRING SIN PARAMETROS ELEM DESPUES
+    SI SE NECESITA MAS DE UN ELEM, HAY QUE METER STRING ',' printf_elem printf_cont
+
 */
 
 %{                          // SECCION 1 Declaraciones de C-Yacc
@@ -114,7 +117,7 @@ dec_main:     MAIN '(' ')' '{' {dentro_main = 1;} r_sentencia     { sprintf(temp
             ;
 
 r_sentencia:                          {$$.code = gen_code("");}
-            | sentencia r_sentencia   { sprintf(temp, "%s\n%s", $1.code, $2.code);
+            | r_sentencia sentencia   { sprintf(temp, "%s%s\n", $1.code, $2.code);
                                                                 $$.code = gen_code(temp);}
             ;
 
@@ -137,7 +140,7 @@ multiples_sentencias:
                             $$.code = gen_code(temp);}
         ;
 
-else_cont:   {$$.code = gen_code("\n");}
+else_cont:   {$$.code = gen_code("");}
         | ELSE '{' if_sentencia '}' { sprintf(temp, "%s\n", $3.code);
                                     $$.code = gen_code(temp);}
     ;
@@ -155,7 +158,7 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
             | PUTS '(' STRING ')' ';'       {  sprintf(temp,"(print \"%s\")",$3.code);
                                             $$.code = gen_code(temp);}
 
-            | WHILE expresion  while_cont  { sprintf(temp,"(loop %s %s do %s)", $1.code, $2.code, $3.code);
+            | WHILE expresion  while_cont  { sprintf(temp,"(loop %s %s do\n%s)", $1.code, $2.code, $3.code);
                              $$.code = gen_code(temp);}
 
             | IF expresion if_cont          { sprintf(temp, "(%s %s %s)",$1.code, $2.code, $3.code);
@@ -168,14 +171,21 @@ while_cont:
     ;
 printf_param:
     
-    STRING printf_cont {$$.code = $2.code;}
+    STRING ',' printf_elem printf_cont {sprintf(temp,"%s\n%s", $3.code, $4.code);
+                                        $$.code = gen_code(temp);}
+    ;
+
+printf_elem:
+    expresion { sprintf(temp, "(princ %s)", $1.code);
+                $$.code = gen_code(temp); }
+
+    | STRING    { sprintf(temp, "(princ \"%s\")", $1.code); 
+                $$.code = gen_code(temp); }
     ;
 
 printf_cont: {$$.code = gen_code("");}
-    | ',' expresion printf_cont { sprintf(temp,"(princ %s)\n%s", $2.code, $3.code);
-                            $$.code = gen_code(temp);}
-    | ',' STRING printf_cont { sprintf(temp,"(princ \"%s\")\n%s", $2.code, $3.code);
-                            $$.code = gen_code(temp);}
+    | ',' printf_elem printf_cont { sprintf(temp,"%s\n%s", $2.code, $3.code);
+                                    $$.code = gen_code(temp);}
    ;
 
 dec_var:
@@ -245,7 +255,7 @@ termino:        operando                           { $$ = $1 ; }
             |   '+' operando %prec UNARY_SIGN      { $$ = $1 ; }
             |   '-' operando %prec UNARY_SIGN      { sprintf (temp, "(- %s)", $2.code);
                                                      $$.code = gen_code (temp) ; }
-            |   '!' operando                         { sprintf (temp, "(! %s)", $2.code) ;
+            |   '!' operando                         { sprintf (temp, "(not %s)", $2.code) ;
                                                         $$.code = gen_code (temp) ; }  
             ;
 
