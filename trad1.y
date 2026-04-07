@@ -10,6 +10,9 @@ AL IGUAL QUE OPERADOR NOT PERO LO TIENEN DEFINIDO COMO LEFT
 ASUMIMOS QUE EL MAIN NO PUEDE ESTAR VACIO -> PREGUNTAR A LA PROFE
 QUE PREFIEREN SI DEJAR RECURSIVIDAD IZQ O DERECHA O DA IGUAL
 
+PREGUNTAR SI SE PUEDE USAR VARIABLE GLOBAL PARA SABER SI ESTAS DENTRO DEL MAIN O NO 
+PARA PODER REUSAR IMPLEMENTACION VARIABLES GLOBALES
+
 */
 
 %{                          // SECCION 1 Declaraciones de C-Yacc
@@ -27,6 +30,12 @@ char *mi_malloc (int) ;
 char *gen_code (char *) ;
 char *int_to_string (int) ;
 char *char_to_string (char) ;
+void añadir_variable_local(char *nombre) ;
+int es_local(char *var_name) ;
+
+char *local_variables[2048]; // Tabla de variables locales
+int local_variables_counter = 0; // Contador de variable locales que tenemos
+int dentro_main = 0; // Variable para saber si nos encontramos dentro del main o no
 
 char temp [2048] ;
 
@@ -98,12 +107,14 @@ r_axioma:                                { ; }
 dec_glob:    | INTEGER dec_var {$$.code = $2.code;}    // Dejamos esta redenominación para usarla después como declarador de funciones
             ;
 
-dec_main:     MAIN '(' ')' '{' r_sentencia     { sprintf(temp, "(defun %s () \n %s)", $1.code, $5.code); 
+dec_main:     MAIN '(' ')' '{' {dentro_main = 1;} r_sentencia     { sprintf(temp, "(defun %s ()\n%s)", $1.code, $6.code); 
+                                                // Informamos que ya estamos dentro del main
+                                                dentro_main = 0;
                                                 $$.code = gen_code(temp) ;          }
             ;
 
-r_sentencia:                          {$$.code = gen_code("\n");}
-            | r_sentencia sentencia   { sprintf(temp, "%s \n %s", $1.code, $2.code);
+r_sentencia:                          {$$.code = gen_code("");}
+            | sentencia r_sentencia   { sprintf(temp, "%s\n%s", $1.code, $2.code);
                                                                 $$.code = gen_code(temp);}
             ;
 
@@ -119,10 +130,10 @@ if_sentencia:
 ;
 
 multiples_sentencias:
-        sentencia sentencia {sprintf(temp, "%s \n %s",$1.code, $2.code);
+        sentencia sentencia { sprintf(temp, "%s\n%s",$1.code, $2.code);
                             $$.code = gen_code(temp);}
 
-        | multiples_sentencias sentencia {sprintf(temp, "%s \n %s",$1.code, $2.code);
+        | multiples_sentencias sentencia { sprintf(temp, "%s\n%s",$1.code, $2.code);
                             $$.code = gen_code(temp);}
         ;
 
@@ -131,8 +142,14 @@ else_cont:   {$$.code = gen_code("\n");}
                                     $$.code = gen_code(temp);}
     ;
 
-sentencia:    IDENTIF '=' expresion ';'      { sprintf (temp, "(setq %s %s)", $1.code, $3.code) ; 
-                                           $$.code = gen_code (temp) ; }
+sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
+                                                // Es local se le añade main_
+                                                sprintf(temp, "(setf main_%s %s)", $1.code, $3.code);
+                                            } else {
+                                                // Es global se usa el nombre de la variable original
+                                                sprintf(temp, "(setf %s %s)", $1.code, $3.code);
+                                            }
+                                            $$.code = gen_code(temp);}
             | PRINTF '(' printf_param ')' ';' { sprintf (temp, "%s", $3.code) ;  
                                            $$.code = gen_code (temp) ; }
             | PUTS '(' STRING ')' ';'       {  sprintf(temp,"(print \"%s\")",$3.code);
@@ -143,6 +160,7 @@ sentencia:    IDENTIF '=' expresion ';'      { sprintf (temp, "(setq %s %s)", $1
 
             | IF expresion if_cont          { sprintf(temp, "(%s %s %s)",$1.code, $2.code, $3.code);
                                                 $$.code = gen_code(temp);}
+            | INTEGER dec_var ';' {$$.code = $2.code;} // DECLARACIÓN DE VARIABLES LOCALES
             ;
 
 while_cont:
@@ -159,19 +177,25 @@ printf_cont: {$$.code = gen_code("");}
     | ',' STRING printf_cont { sprintf(temp,"(princ \"%s\")\n%s", $2.code, $3.code);
                             $$.code = gen_code(temp);}
    ;
-   
+
 dec_var:
-     IDENTIF continue_ID {sprintf(temp, "(setq %s %s", $1.code, $2.code);
+     IDENTIF continue_ID {  if(dentro_main == 0){
+                                sprintf(temp, "(setq %s %s", $1.code, $2.code);
+                            }else{
+                                sprintf(temp, "(setq main_%s %s", $1.code, $2.code);
+                                añadir_variable_local($1.code);
+                                }
                                 $$.code = gen_code(temp);}
 
-continue_ID:   continue_comma {sprintf(temp, "0)%s", $1.code); 
+continue_ID:   continue_comma { sprintf(temp, "0)%s", $1.code); 
                               $$.code = gen_code(temp);} 
 
-        | '=' NUMBER continue_comma {sprintf(temp, "%d)%s", $2.value, $3.code);
+        | '=' NUMBER continue_comma { sprintf(temp, "%d)%s", $2.value, $3.code);
                                     $$.code = gen_code(temp); }
         ;
 
-continue_comma:  ',' dec_var { $$.code = $2.code;}
+continue_comma:  ',' dec_var { sprintf(temp,"\n%s",$2.code);
+                            $$.code = gen_code(temp);}
         | { $$.code = "";}
 
         ;     
@@ -225,8 +249,13 @@ termino:        operando                           { $$ = $1 ; }
                                                         $$.code = gen_code (temp) ; }  
             ;
 
-operando:       IDENTIF                  { sprintf (temp, "%s", $1.code) ;
-                                           $$.code = gen_code (temp) ; }
+operando:       IDENTIF                 { if (es_local($1.code)) {
+                                            sprintf(temp, "main_%s", $1.code);
+                                        } else {
+                                            sprintf(temp, "%s", $1.code);
+                                        }
+                                        $$.code = gen_code(temp);
+                                        }
             |   NUMBER                   { sprintf (temp, "%d", $1.value) ;
                                            $$.code = gen_code (temp) ; }
             |   '(' expresion ')'        { $$ = $2 ; }
@@ -306,6 +335,24 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "else",         ELSE,
     NULL,          0               // para marcar el fin de la tabla
 } ;
+
+int es_local(char *var_name){
+    for(int i = 0; i < local_variables_counter; i++){
+        if(strcmp(var_name,local_variables[i]) == 0){
+            // Si coincide el nombre de la variable con alguna del array, entonces es local.
+            return 1;
+        }
+    }
+    // Si no hubo ninguna coincidencia, entonces es global
+    return 0;
+
+}
+
+void añadir_variable_local(char *nombre){
+    // Añadimos la variable al array y aumentamos el contador
+    local_variables[local_variables_counter] = gen_code(nombre);
+    local_variables_counter++;
+}
 
 t_keyword *search_keyword (char *symbol_name)
 {                                  // Busca n_s en la tabla de pal. res.

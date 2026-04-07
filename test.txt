@@ -1,12 +1,12 @@
 int a =3;
 int b;
 main(){
-    c = 3;
+    int c = 3,j,w = 8, p;
     puts("Hola Mundo");
     printf("Prueba_1", 5 + 6, 6 + 7, "Tigre");
     while(a == 6){
         c = 7;
-        b = 6 + 7;
+        b = a + c;
     }
 
     puts("Caracola");
@@ -37,5 +37,9 @@ main(){
         c = 5;
     } else{
         j = 9;
+    }
+
+    if(w > 7){
+        printf("Probando variables locales");
     }
 }
