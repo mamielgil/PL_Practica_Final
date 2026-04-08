@@ -174,24 +174,29 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
             ;
 for_operator:
         INC'('IDENTIF')'')' while_cont { if(es_local($3.code)){ 
-                                    sprintf(temp,"%s\n(setq main_%s (+ main_%s 1))",$6.code,$3.code, $5.code);
+                                    sprintf(temp,"%s\n(setf main_%s (+ main_%s 1))",$6.code,$3.code, $5.code);
                                     }else{
-                                    sprintf(temp,"%s\n(setq %s (+ %s 1))",$6.code,$3.code, $5.code);
+                                    sprintf(temp,"%s\n(setf %s (+ %s 1))",$6.code,$3.code, $5.code);
                                     }
                                      $$.code = gen_code(temp);
                                    }
         | DEC '('IDENTIF')'')' while_cont  { if(es_local($3.code)){ 
-                                    sprintf(temp,"%s\n(setq main_%s (+ main_%s 1))",$5.code,$3.code, $5.code);
+                                    sprintf(temp,"%s\n(setf main_%s (+ main_%s 1))",$5.code,$3.code, $5.code);
                                     }else{
-                                    sprintf(temp,"%s\n(setq %s (+ %s 1))",$5.code,$3.code, $5.code);
+                                        sprintf(temp,"%s\n(setf %s (+ %s 1))",$5.code,$3.code, $5.code);
                                     }
                                      $$.code = gen_code(temp);
                                     }
 
-for_var: IDENTIF '=' expresion      { sprintf(temp, "(setq main_%s %s)", $1.code, $3.code);
-                                        $$.code = gen_code(temp);
+for_var: IDENTIF '=' expresion      { if(es_local($1.code)){
+                                    sprintf(temp, "(setf main_%s %s)", $1.code, $3.code);
+                                    
+                                    }else{
+                                        sprintf(temp, "(setq main_%s %s)", $1.code, $3.code);
                                         añadir_variable_local($1.code);
-                                               }
+                                    }
+                                    $$.code = gen_code(temp);
+                                    }
 
 while_cont:
      '{' r_sentencia '}' {$$.code = $2.code;}
