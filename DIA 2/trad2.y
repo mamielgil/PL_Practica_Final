@@ -174,29 +174,32 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
 
             | IF expresion if_cont          { sprintf(temp, "(%s %s %s)",$1.code, $2.code, $3.code);
                                                 $$.code = gen_code(temp);}
+
             | INTEGER dec_var ';' {$$.code = $2.code;} // DECLARACIÓN DE VARIABLES LOCALES
+
             | FOR '(' for_var ';' expr_condicional ';' for_operator { sprintf(temp,"%s\n(loop while %s do\n%s)", $3.code, $5.code, $7.code);
                                                                     $$.code = gen_code(temp);}
+
             | SWITCH '('IDENTIF')' switch_cont {if (es_local($3.code)) {
                                                 // Es local se le añade main_
-                                                sprintf(temp, "(case main_%s %s)", $3.code, $5.code);
+                                                sprintf(temp, "(case main_%s\n%s)", $3.code, $5.code);
                                             } else {
                                                 // Es global se usa el nombre de la variable original
-                                                sprintf(temp, "(case %s %s)", $3.code, $5.code);
+                                                sprintf(temp, "(case %s\n%s)", $3.code, $5.code);
                                             }
                                             $$.code = gen_code(temp);}
             ;
 switch_cont:
-    '{' CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 '}' { sprintf(temp,"(%s %s)\n%s",$3.code,$5.code,$8.code);
+    '{' CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 '}' { sprintf(temp,"(%s \n%s)%s",$3.code,$5.code,$8.code);
                                                                     $$.code = gen_code(temp);}
     ;
 
 switch_cont2:
     {$$.code = gen_code("");}
-    | DEFAULT ':' r_sentencia BREAK';' { sprintf(temp,"(otherwise %s)\n",$3.code);
+    | DEFAULT ':' r_sentencia BREAK';' { sprintf(temp,"(otherwise \n%s)\n",$3.code);
                                         $$.code = gen_code(temp);}
 
-    | CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 { sprintf(temp,"(%s %s)\n%s",$2.code,$4.code,$7.code);
+    | CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 { sprintf(temp,"\n(%s \n%s)\n%s",$2.code,$4.code,$7.code);
                                                     $$.code = gen_code(temp);}
     ;
 
@@ -239,7 +242,7 @@ while_cont:
     ;
 printf_param:
     
-    STRING ',' printf_elem printf_cont {sprintf(temp,"%s\n%s", $3.code, $4.code);
+    STRING ',' printf_elem printf_cont {sprintf(temp,"%s%s", $3.code, $4.code);
                                         $$.code = gen_code(temp);}
     ;
 
@@ -252,7 +255,7 @@ printf_elem:
     ;
 
 printf_cont: {$$.code = gen_code("");}
-    | ',' printf_elem printf_cont { sprintf(temp,"%s\n%s", $2.code, $3.code);
+    | ',' printf_elem printf_cont { sprintf(temp,"\n%s%s", $2.code, $3.code);
                                     $$.code = gen_code(temp);}
    ;
 

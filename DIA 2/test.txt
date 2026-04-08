@@ -52,7 +52,6 @@ main(){
             printf("%d",5,"Como estamos");
             b = b + 7;
             break;
-
         case 7:
             c = 9;
             break;
