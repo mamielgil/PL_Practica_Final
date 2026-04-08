@@ -16,6 +16,8 @@ PARA PODER REUSAR IMPLEMENTACION VARIABLES GLOBALES
 PREGUNTAR PRINTF SI PODEMOS TENER UNA SOLA STRING SIN PARAMETROS ELEM DESPUES
     SI SE NECESITA MAS DE UN ELEM, HAY QUE METER STRING ',' printf_elem printf_cont
 
+PREGUNTAR QUE VALORES SON LOS PERMITIDOS PARA CADA UNO DE LOS CASE DEL SWITCH, NUMEROS SOLAMENTE O TAMBIEN STRINGS O QUE COSAS 
+
 */
 
 %{                          // SECCION 1 Declaraciones de C-Yacc
@@ -89,6 +91,10 @@ typedef struct s_attr {
 %token FOR          // idenfifica el bucle FOR
 %token INC          //identifica el operador INC
 %token DEC          //identifica el operador DEC
+%token SWITCH       //identifica la estructura de control switch
+%token CASE         //identifica la palabra clave CASE del switch
+%token BREAK        // identifica la palabra clave BREAK
+%token DEFAULT      // identifica la palabra clave DEFAULT del switch
 
 // DEFINIMOS AQUI LA ASOCIATIVIDAD DE LOS OPERADORES
 
@@ -171,7 +177,37 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
             | INTEGER dec_var ';' {$$.code = $2.code;} // DECLARACIÓN DE VARIABLES LOCALES
             | FOR '(' for_var ';' expr_condicional ';' for_operator { sprintf(temp,"%s\n(loop while %s do\n%s)", $3.code, $5.code, $7.code);
                                                                     $$.code = gen_code(temp);}
+            | SWITCH '('IDENTIF')' switch_cont {if (es_local($3.code)) {
+                                                // Es local se le añade main_
+                                                sprintf(temp, "(case main_%s %s)", $3.code, $5.code);
+                                            } else {
+                                                // Es global se usa el nombre de la variable original
+                                                sprintf(temp, "(case %s %s)", $3.code, $5.code);
+                                            }
+                                            $$.code = gen_code(temp);}
             ;
+switch_cont:
+    '{' CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 '}' { sprintf(temp,"(%s %s)\n%s",$3.code,$5.code,$8.code);
+                                                                    $$.code = gen_code(temp);}
+    ;
+
+switch_cont2:
+    {$$.code = gen_code("");}
+    | DEFAULT ':' r_sentencia BREAK';' { sprintf(temp,"(otherwise %s)\n",$3.code);
+                                        $$.code = gen_code(temp);}
+
+    | CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 { sprintf(temp,"(%s %s)\n%s",$2.code,$4.code,$7.code);
+                                                    $$.code = gen_code(temp);}
+    ;
+
+switch_val:
+         '+' NUMBER %prec UNARY_SIGN      { sprintf(temp,"%d",$2.value);
+                                            $$.code = gen_code(temp); }
+         | '-' NUMBER %prec UNARY_SIGN      { sprintf (temp, "(- %d)", $2.value);
+                                                     $$.code = gen_code (temp) ; }
+         | NUMBER  { sprintf (temp, "%d", $1.value) ;
+                    $$.code = gen_code (temp) ; }
+;
 for_operator:
         INC'('IDENTIF')'')' while_cont { if(es_local($3.code)){ 
                                     sprintf(temp,"%s\n(setf main_%s (+ main_%s 1))",$6.code,$3.code, $5.code);
@@ -383,6 +419,10 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "for",          FOR,
     "inc",          INC,
     "dec",          DEC,
+    "switch",       SWITCH,
+    "case",         CASE,
+    "break",        BREAK,
+    "default",      DEFAULT,
     NULL,            0               // para marcar el fin de la tabla
 } ;
 
