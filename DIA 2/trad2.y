@@ -112,36 +112,36 @@ typedef struct s_attr {
 axioma:       dec_glob ';'   { printf ("%s\n", $1.code) ; } 
                 r_axioma  {;}  
             | dec_main '}'   { printf("%s\n(main)", $1.code); }
-            ;
+        ;
 
 r_axioma:                                { ; }
             |   axioma                   { ; }
-            ;
+        ;
 
 dec_glob:    | INTEGER dec_var {$$.code = $2.code;}    // Dejamos esta redenominación para usarla después como declarador de funciones
-            ;
+        ;
 
 dec_main:     MAIN '(' ')' '{' {dentro_main = 1;} r_sentencia     { sprintf(temp, "(defun %s ()\n%s)", $1.code, $6.code); 
                                                 // Informamos que ya estamos dentro del main
                                                 dentro_main = 0;
                                                 $$.code = gen_code(temp) ;          }
-            ;
+        ;
 
 r_sentencia:                          {$$.code = gen_code("");}
             | r_sentencia sentencia   { sprintf(temp, "%s%s\n", $1.code, $2.code);
                                                                 $$.code = gen_code(temp);}
-            ;
+        ;
 
 if_cont: '{' if_sentencia '}' else_cont { sprintf(temp,"\n%s\n%s", $2.code, $4.code);
                                         $$.code = gen_code(temp);}
 
-;
+        ;
 
 if_sentencia: 
         sentencia { $$.code = $1.code;}
         | multiples_sentencias { sprintf(temp, "(progn %s)",$1.code);
                                 $$.code = gen_code(temp);}
-;
+        ;
 
 multiples_sentencias:
         sentencia sentencia { sprintf(temp, "%s\n%s",$1.code, $2.code);
@@ -154,7 +154,7 @@ multiples_sentencias:
 else_cont:   {$$.code = gen_code("");}
         | ELSE '{' if_sentencia '}' { sprintf(temp, "%s\n", $3.code);
                                     $$.code = gen_code(temp);}
-    ;
+        ;
 
 sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
                                                 // Es local se le añade main_
@@ -188,11 +188,11 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
                                                 sprintf(temp, "(case %s\n%s)", $3.code, $5.code);
                                             }
                                             $$.code = gen_code(temp);}
-            ;
+        ;
 switch_cont:
     '{' CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 '}' { sprintf(temp,"(%s \n%s)%s",$3.code,$5.code,$8.code);
                                                                     $$.code = gen_code(temp);}
-    ;
+        ;
 
 switch_cont2:
     {$$.code = gen_code("");}
@@ -201,7 +201,7 @@ switch_cont2:
 
     | CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 { sprintf(temp,"\n(%s \n%s)\n%s",$2.code,$4.code,$7.code);
                                                     $$.code = gen_code(temp);}
-    ;
+        ;
 
 switch_val:
          '+' NUMBER %prec UNARY_SIGN      { sprintf(temp,"%d",$2.value);
@@ -210,7 +210,8 @@ switch_val:
                                                      $$.code = gen_code (temp) ; }
          | NUMBER  { sprintf (temp, "%d", $1.value) ;
                     $$.code = gen_code (temp) ; }
-;
+        ;
+
 for_operator:
         INC'('IDENTIF')'')' while_cont { if(es_local($3.code)){ 
                                     sprintf(temp,"%s\n(setf main_%s (+ main_%s 1))",$6.code,$3.code, $5.code);
@@ -226,6 +227,7 @@ for_operator:
                                     }
                                      $$.code = gen_code(temp);
                                     }
+        ;   
 
 for_var: IDENTIF '=' expresion      { if(es_local($1.code)){
                                     sprintf(temp, "(setf main_%s %s)", $1.code, $3.code);
@@ -236,15 +238,16 @@ for_var: IDENTIF '=' expresion      { if(es_local($1.code)){
                                     }
                                     $$.code = gen_code(temp);
                                     }
-
+        ;
 while_cont:
      '{' r_sentencia '}' {$$.code = $2.code;}
-    ;
+        ;
+
 printf_param:
     
     STRING ',' printf_elem printf_cont {sprintf(temp,"%s%s", $3.code, $4.code);
                                         $$.code = gen_code(temp);}
-    ;
+        ;
 
 printf_elem:
     expresion { sprintf(temp, "(princ %s)", $1.code);
@@ -252,12 +255,12 @@ printf_elem:
 
     | STRING    { sprintf(temp, "(princ \"%s\")", $1.code); 
                 $$.code = gen_code(temp); }
-    ;
+        ;
 
 printf_cont: {$$.code = gen_code("");}
     | ',' printf_elem printf_cont { sprintf(temp,"\n%s%s", $2.code, $3.code);
                                     $$.code = gen_code(temp);}
-   ;
+        ;
 
 dec_var:
      IDENTIF continue_ID {  if(dentro_main == 0){
@@ -267,6 +270,7 @@ dec_var:
                                 añadir_variable_local($1.code);
                                 }
                                 $$.code = gen_code(temp);}
+        ;
 
 continue_ID:   continue_comma { sprintf(temp, "0)%s", $1.code); 
                               $$.code = gen_code(temp);} 
@@ -278,14 +282,13 @@ continue_ID:   continue_comma { sprintf(temp, "0)%s", $1.code);
 continue_comma:  ',' dec_var { sprintf(temp,"\n%s",$2.code);
                             $$.code = gen_code(temp);}
         | { $$.code = "";}
-
         ;     
 
 expresion:
         expr_condicional {$$ = $1;}
         | expr_others {$$ = $1;}
         | termino   { $$ = $1;}
-
+        ;
 expr_condicional:                
              expresion AND expresion { sprintf (temp, "(and %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
@@ -326,6 +329,7 @@ expr_others:  expresion '%' expresion { sprintf (temp, "(mod %s %s)", $1.code, $
 
             |   expresion '/' expresion  { sprintf (temp, "(/ %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ; }
+            ;
 
 termino:        operando                           { $$ = $1 ; }                          
             |   '+' operando %prec UNARY_SIGN      { $$ = $1 ; }
