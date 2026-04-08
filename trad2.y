@@ -111,13 +111,30 @@ typedef struct s_attr {
 
 %%                            // Seccion 3 Gramatica - Semantico
 
-axioma:       dec_glob ';'   { printf ("%s\n", $1.code) ; } 
-                r_axioma  {;}  
-            | dec_main '}'   { printf("%s\n(main)", $1.code); }
+
+axioma: 
+    dec_glob ';' { printf ("%s\n", $1.code) ; }
+    r_axioma {;}
+
+    | dec_main '}'{ printf("%s\n(main)", $1.code); }
+
+    | dec_func '}' { printf("%s\n",$1.code); } r_axioma {;}
         ;
 
-r_axioma:                                { ; }
-            |   axioma                   { ; }
+  
+
+// De momento sin parametros
+
+dec_func: 
+
+    IDENTIF '('')' '{'{ strcpy(dentro_funcion, $1.code);} r_sentencia { sprintf(temp,"(defun %s()\n%s)",$1.code,$6.code);
+                        $$.code = gen_code(temp);
+                        strcpy(dentro_funcion, "global");}
+        ;
+
+r_axioma: 
+            { ; }
+    | axioma { ; }
         ;
 
 dec_glob:    | INTEGER dec_var {$$.code = $2.code;}    // Dejamos esta redenominación para usarla después como declarador de funciones
