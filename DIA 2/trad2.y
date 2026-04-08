@@ -18,6 +18,8 @@ PREGUNTAR PRINTF SI PODEMOS TENER UNA SOLA STRING SIN PARAMETROS ELEM DESPUES
 
 PREGUNTAR QUE VALORES SON LOS PERMITIDOS PARA CADA UNO DE LOS CASE DEL SWITCH, NUMEROS SOLAMENTE O TAMBIEN STRINGS O QUE COSAS 
 
+HAY QUE MIRAR COMO SOLUCIONAR PROBLEMA DE SI VARIABLE ESTA DECLARADA DE FORMA LOCAL EN EL MAIN
+SI AL UTILIZARLA DENTRO DE OTRA FUNCION QUE TE LA PILLE COMO PERTENECIENTE AL MAIN y no a dicha función.
 */
 
 %{                          // SECCION 1 Declaraciones de C-Yacc
@@ -42,7 +44,7 @@ int es_local(char *var_name) ;
 
 char *local_variables[2048]; // Tabla de variables locales
 int local_variables_counter = 0; // Contador de variable locales que tenemos
-int dentro_main = 0; // Variable para saber si nos encontramos dentro del main o no
+char dentro_funcion[500] = "global"; // Variable para saber si nos encontramos dentro del main o no
 
 char temp [2048] ;
 
@@ -121,9 +123,9 @@ r_axioma:                                { ; }
 dec_glob:    | INTEGER dec_var {$$.code = $2.code;}    // Dejamos esta redenominación para usarla después como declarador de funciones
         ;
 
-dec_main:     MAIN '(' ')' '{' {dentro_main = 1;} r_sentencia     { sprintf(temp, "(defun %s ()\n%s)", $1.code, $6.code); 
+dec_main:     MAIN '(' ')' '{' {strcpy(dentro_funcion, "main");} r_sentencia     { sprintf(temp, "(defun %s ()\n%s)", $1.code, $6.code); 
                                                 // Informamos que ya estamos dentro del main
-                                                dentro_main = 0;
+                                                strcpy(dentro_funcion,"global");
                                                 $$.code = gen_code(temp) ;          }
         ;
 
@@ -158,7 +160,7 @@ else_cont:   {$$.code = gen_code("");}
 
 sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
                                                 // Es local se le añade main_
-                                                sprintf(temp, "(setf main_%s %s)", $1.code, $3.code);
+                                                sprintf(temp, "(setf %s_%s %s)", dentro_funcion ,$1.code, $3.code);
                                             } else {
                                                 // Es global se usa el nombre de la variable original
                                                 sprintf(temp, "(setf %s %s)", $1.code, $3.code);
@@ -182,7 +184,7 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
 
             | SWITCH '('IDENTIF')' switch_cont {if (es_local($3.code)) {
                                                 // Es local se le añade main_
-                                                sprintf(temp, "(case main_%s\n%s)", $3.code, $5.code);
+                                                sprintf(temp, "(case %s_%s\n%s)", dentro_funcion,$3.code, $5.code);
                                             } else {
                                                 // Es global se usa el nombre de la variable original
                                                 sprintf(temp, "(case %s\n%s)", $3.code, $5.code);
@@ -214,14 +216,14 @@ switch_val:
 
 for_operator:
         INC'('IDENTIF')'')' while_cont { if(es_local($3.code)){ 
-                                    sprintf(temp,"%s\n(setf main_%s (+ main_%s 1))",$6.code,$3.code, $5.code);
+                                    sprintf(temp,"%s\n(setf %s_%s (+ %s_%s 1))",$6.code,dentro_funcion,$3.code, dentro_funcion ,$5.code);
                                     }else{
                                     sprintf(temp,"%s\n(setf %s (+ %s 1))",$6.code,$3.code, $5.code);
                                     }
                                      $$.code = gen_code(temp);
                                    }
         | DEC '('IDENTIF')'')' while_cont  { if(es_local($3.code)){ 
-                                    sprintf(temp,"%s\n(setf main_%s (+ main_%s 1))",$5.code,$3.code, $5.code);
+                                    sprintf(temp,"%s\n(setf %s_%s (+ %s_%s 1))",$5.code,dentro_funcion,$3.code, dentro_funcion, $5.code);
                                     }else{
                                         sprintf(temp,"%s\n(setf %s (+ %s 1))",$5.code,$3.code, $5.code);
                                     }
@@ -230,10 +232,10 @@ for_operator:
         ;   
 
 for_var: IDENTIF '=' expresion      { if(es_local($1.code)){
-                                    sprintf(temp, "(setf main_%s %s)", $1.code, $3.code);
+                                    sprintf(temp, "(setf %s_%s %s)", dentro_funcion, $1.code, $3.code);
                                     
                                     }else{
-                                        sprintf(temp, "(setq main_%s %s)", $1.code, $3.code);
+                                        sprintf(temp, "(setq %s_%s %s)", dentro_funcion, $1.code, $3.code);
                                         añadir_variable_local($1.code);
                                     }
                                     $$.code = gen_code(temp);
@@ -263,10 +265,10 @@ printf_cont: {$$.code = gen_code("");}
         ;
 
 dec_var:
-     IDENTIF continue_ID {  if(dentro_main == 0){
+     IDENTIF continue_ID {  if(strcmp(dentro_funcion,"global") == 0){
                                 sprintf(temp, "(setq %s %s", $1.code, $2.code);
                             }else{
-                                sprintf(temp, "(setq main_%s %s", $1.code, $2.code);
+                                sprintf(temp, "(setq %s_%s %s",dentro_funcion,$1.code, $2.code);
                                 añadir_variable_local($1.code);
                                 }
                                 $$.code = gen_code(temp);}
@@ -340,7 +342,7 @@ termino:        operando                           { $$ = $1 ; }
             ;
 
 operando:       IDENTIF                 { if (es_local($1.code)) {
-                                            sprintf(temp, "main_%s", $1.code);
+                                            sprintf(temp, "%s_%s", dentro_funcion,$1.code);
                                         } else {
                                             sprintf(temp, "%s", $1.code);
                                         }
