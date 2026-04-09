@@ -1,4 +1,6 @@
 int a = 6;
+int b = -6;
+int c = +6;
 es_par(){
     int ep = 0;
     printf("%d",ep);
@@ -14,7 +16,7 @@ es_par(){
     
 }
 
-es_impar(int v, int c, int d){
+es_impar(int v, int c, char d){
     v = 6;
     int ep = 0;
     switch(v){

@@ -328,6 +328,12 @@ continue_ID:   continue_comma { sprintf(temp, "0)%s", $1.code);
 
         | '=' NUMBER continue_comma { sprintf(temp, "%d)%s", $2.value, $3.code);
                                     $$.code = gen_code(temp); }
+
+        | '=' '-'NUMBER continue_comma { sprintf(temp, "-%d)%s", $3.value, $4.code);
+                                    $$.code = gen_code(temp); }
+
+        | '=' '+'NUMBER continue_comma { sprintf(temp, "%d)%s", $3.value, $4.code);
+                                    $$.code = gen_code(temp); }
         ;
 
 continue_comma:  ',' dec_var { sprintf(temp,"\n%s",$2.code);
