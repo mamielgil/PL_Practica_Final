@@ -149,7 +149,7 @@ dec_main:     MAIN '(' ')' '{' {strcpy(dentro_funcion, "main");} r_sentencia    
         ;
 
 r_sentencia:                          {$$.code = gen_code("");}
-            | r_sentencia sentencia   { sprintf(temp, "%s%s\n", $1.code, $2.code);
+            |  sentencia r_sentencia   { sprintf(temp, "%s\n%s", $1.code, $2.code);
                                                                 $$.code = gen_code(temp);}
         ;
 
