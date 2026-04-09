@@ -1,3 +1,6 @@
+int a = 7;
+int b = 8,cx = 9;
+
 es_par(){
     int ep = 0;
     printf("%d",ep);
@@ -25,6 +28,14 @@ es_impar(int v, int c, int d){
         default:
             printf("%s","Ocurrio un error");
             break;
+    }
+
+    for( i = 0; i < 5; INC(i)){
+        int c = 8;
+    }
+
+    for(j = 6; j < 8; DEC(j)){
+        int w = 9;
     }
     
 }

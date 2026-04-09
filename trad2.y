@@ -82,6 +82,8 @@ typedef struct s_attr {
 %token NUMBER        
 %token IDENTIF       // Identificador=variable
 %token INTEGER       // identifica el tipo entero
+%token CHAR          // identifica el tipo char
+%token FLOAT         //identifica el tipo float
 %token STRING
 %token MAIN          // identifica el comienzo del proc. main
 %token WHILE         // identifica el bucle main
@@ -154,6 +156,8 @@ func_params_declaration_cont:
 func_params_types:
 
     INTEGER {$$.code = gen_code("");}
+    | FLOAT {$$.code = gen_code("");}
+    | CHAR  {$$.code = gen_code("");}
 
         ;
 func_return_al_final:
@@ -290,14 +294,14 @@ for_operator:
         INC'('IDENTIF')'')' while_cont { if(es_local($3.code)){ 
                                     sprintf(temp,"%s\n(setf %s_%s (+ %s_%s 1))",$6.code,dentro_funcion,$3.code, dentro_funcion ,$3.code);
                                     }else{
-                                    sprintf(temp,"%s\n(setf %s (+ %s 1))",$6.code,$3.code, $3.code);
+                                    sprintf(temp,"%s\n(setf %s (+ %s 1))",$6.code, $3.code, $3.code);
                                     }
                                      $$.code = gen_code(temp);
                                    }
         | DEC '('IDENTIF')'')' while_cont  { if(es_local($3.code)){ 
-                                    sprintf(temp,"%s\n(setf %s_%s (- %s_%s 1))",$5.code,dentro_funcion,$3.code, dentro_funcion, $3.code);
+                                    sprintf(temp,"%s\n(setf %s_%s (- %s_%s 1))",$6.code,dentro_funcion,$3.code, dentro_funcion, $3.code);
                                     }else{
-                                        sprintf(temp,"%s\n(setf %s (- %s 1))",$5.code,$3.code, $3.code);
+                                        sprintf(temp,"%s\n(setf %s (- %s 1))",$6.code, $3.code, $3.code);
                                     }
                                      $$.code = gen_code(temp);
                                     }
@@ -485,11 +489,13 @@ typedef struct s_keyword { // para las palabras reservadas de C
 } t_keyword ;
 
 t_keyword keywords [] = { // define las palabras reservadas y los
-    "main",        MAIN,           // y los token asociados
-    "while",       WHILE,
-    "int",         INTEGER,
-    "puts",        PUTS,
-    "printf",      PRINTF, 
+    "main",         MAIN,           // y los token asociados
+    "while",        WHILE,
+    "int",          INTEGER,
+    "char",         CHAR,  
+    "float",        FLOAT,  
+    "puts",         PUTS,
+    "printf",       PRINTF, 
     "&&",           AND,
     "||",           OR,
     "!=",           NOT_EQUAL,
