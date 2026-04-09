@@ -8,11 +8,14 @@ es_par(){
         puts("es impar");
         ep = 0;
     }
+
+    return ep;
     
 }
 
 es_impar(int v, int c, int d){
     v = 6;
+    int ep = 0;
     switch(v){
         case 1:
             int a = 6;

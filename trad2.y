@@ -133,7 +133,7 @@ axioma:
 
 dec_func: 
 
-    IDENTIF '('func_params_declaration')' '{'{ strcpy(dentro_funcion, $1.code);} r_sentencia func_return_al_final { sprintf(temp,"(defun %s(%s)\n%s%s)",$1.code ,$3.code, $7.code, $8.code);
+    IDENTIF '('func_params_declaration')' '{'{ strcpy(dentro_funcion, $1.code); local_variables_counter = 0;} r_sentencia func_return_al_final { sprintf(temp,"(defun %s(%s)\n%s%s)",$1.code ,$3.code, $7.code, $8.code);
                         $$.code = gen_code(temp);
                         strcpy(dentro_funcion, "global");}
         ;
@@ -189,7 +189,7 @@ r_axioma:
 dec_glob:    | INTEGER dec_var {$$.code = $2.code;}    // Dejamos esta redenominación para usarla después como declarador de funciones
         ;
 
-dec_main:     MAIN '('func_params_declaration')' '{' {strcpy(dentro_funcion, "main");} r_sentencia func_return_al_final { sprintf(temp, "(defun %s (%s)\n%s%s)", $1.code, $3.code, $7.code, $8.code); 
+dec_main:     MAIN '('func_params_declaration')' '{' {strcpy(dentro_funcion, "main"); local_variables_counter = 0;} r_sentencia func_return_al_final { sprintf(temp, "(defun %s (%s)\n%s%s)", $1.code, $3.code, $7.code, $8.code); 
                                                 // Informamos que ya estamos dentro del main
                                                 strcpy(dentro_funcion,"global");
                                                 $$.code = gen_code(temp) ;          }
@@ -288,16 +288,16 @@ switch_val:
 
 for_operator:
         INC'('IDENTIF')'')' while_cont { if(es_local($3.code)){ 
-                                    sprintf(temp,"%s\n(setf %s_%s (+ %s_%s 1))",$6.code,dentro_funcion,$3.code, dentro_funcion ,$5.code);
+                                    sprintf(temp,"%s\n(setf %s_%s (+ %s_%s 1))",$6.code,dentro_funcion,$3.code, dentro_funcion ,$3.code);
                                     }else{
-                                    sprintf(temp,"%s\n(setf %s (+ %s 1))",$6.code,$3.code, $5.code);
+                                    sprintf(temp,"%s\n(setf %s (+ %s 1))",$6.code,$3.code, $3.code);
                                     }
                                      $$.code = gen_code(temp);
                                    }
         | DEC '('IDENTIF')'')' while_cont  { if(es_local($3.code)){ 
-                                    sprintf(temp,"%s\n(setf %s_%s (+ %s_%s 1))",$5.code,dentro_funcion,$3.code, dentro_funcion, $5.code);
+                                    sprintf(temp,"%s\n(setf %s_%s (- %s_%s 1))",$5.code,dentro_funcion,$3.code, dentro_funcion, $3.code);
                                     }else{
-                                        sprintf(temp,"%s\n(setf %s (+ %s 1))",$5.code,$3.code, $5.code);
+                                        sprintf(temp,"%s\n(setf %s (- %s 1))",$5.code,$3.code, $3.code);
                                     }
                                      $$.code = gen_code(temp);
                                     }
