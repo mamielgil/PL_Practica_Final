@@ -10,18 +10,14 @@ AL IGUAL QUE OPERADOR NOT PERO LO TIENEN DEFINIDO COMO LEFT
 ASUMIMOS QUE EL MAIN NO PUEDE ESTAR VACIO -> PREGUNTAR A LA PROFE
 QUE PREFIEREN SI DEJAR RECURSIVIDAD IZQ O DERECHA O DA IGUAL
 
-PREGUNTAR SI SE PUEDE USAR VARIABLE GLOBAL PARA SABER SI ESTAS DENTRO DEL MAIN O NO 
-PARA PODER REUSAR IMPLEMENTACION VARIABLES GLOBALES
-
 PREGUNTAR PRINTF SI PODEMOS TENER UNA SOLA STRING SIN PARAMETROS ELEM DESPUES
     SI SE NECESITA MAS DE UN ELEM, HAY QUE METER STRING ',' printf_elem printf_cont
 
 PREGUNTAR QUE VALORES SON LOS PERMITIDOS PARA CADA UNO DE LOS CASE DEL SWITCH, NUMEROS SOLAMENTE O TAMBIEN STRINGS O QUE COSAS 
 
-HAY QUE MIRAR COMO SOLUCIONAR PROBLEMA DE SI VARIABLE ESTA DECLARADA DE FORMA LOCAL EN EL MAIN
-SI AL UTILIZARLA DENTRO DE OTRA FUNCION QUE TE LA PILLE COMO PERTENECIENTE AL MAIN y no a dicha función.
-
 MIRAR SI HAY QUE SOLUCIONAR PROBLEMA DE NECESIDAD DE DECLARAR FUNCION MAIN PARA QUE EL CODIGO SEA ACEPTADO Y TRADUCIDO
+
+PREGUNTAR QUE PARAMETROS SE DEBEN ACEPTAR COMO INPUT PARA UNA FUNCION, TIPO INTEGER, STRING, CHAR???
 */
 
 %{                          // SECCION 1 Declaraciones de C-Yacc
@@ -129,11 +125,23 @@ axioma:
 
 dec_func: 
 
-    IDENTIF '('')' '{'{ strcpy(dentro_funcion, $1.code);} r_sentencia { sprintf(temp,"(defun %s()\n%s)",$1.code,$6.code);
+    IDENTIF '('func_params')' '{'{ strcpy(dentro_funcion, $1.code);} r_sentencia { sprintf(temp,"(defun %s(%s)\n%s)",$1.code ,$3.code, $7.code);
                         $$.code = gen_code(temp);
                         strcpy(dentro_funcion, "global");}
         ;
+func_params:
+        // lambda, no tenemos params 
+        {$$.code = gen_code("");}
+        | INTEGER IDENTIF func_params_cont { sprintf(temp, "%s%s",$2.code, $3.code);
+                            $$.code = gen_code(temp);}
 
+            ;
+
+func_params_cont:
+        {$$.code = gen_code("");}
+        | ',' INTEGER IDENTIF func_params_cont { sprintf(temp," %s%s",$3.code, $4.code);
+                                            $$.code = gen_code(temp);}
+        ;
 r_axioma: 
             { ; }
     | axioma { ; }

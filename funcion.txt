@@ -10,6 +10,20 @@ es_par(){
     }
 }
 
+es_impar(int v, int c, int d){
+    v = 6;
+    switch(v){
+        case 1:
+            int a = 6;
+            a = a + v;
+            break;
+        
+        default:
+            printf("%s","Ocurrio un error");
+            break;
+    }
+}
+
 main(){
     
 }
