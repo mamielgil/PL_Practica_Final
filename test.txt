@@ -59,7 +59,10 @@ main(){
         
         default:
             int j = 8;
+            return es_impar(6,7,8);
             break;
 
     }
+
+    return 6 + 9;
 }

@@ -2,7 +2,6 @@
 Número de equipo: 107, Miguel Amiel, Chen Xu
 100525454@alumnos.uc3m.es, 100522395@alumnos.uc3m.es
 
-ACORDARSE SOLUCIONAR \n de más al leer lambda en princ
 
 PREGUNTAR RESPECTO A ASOCIATIVIDAD EN EL BLOG PONE QUE UNARY ES DE RIGHT-TO-LEFT 
 AL IGUAL QUE OPERADOR NOT PERO LO TIENEN DEFINIDO COMO LEFT
@@ -18,11 +17,13 @@ PREGUNTAR QUE VALORES SON LOS PERMITIDOS PARA CADA UNO DE LOS CASE DEL SWITCH, N
 MIRAR SI HAY QUE SOLUCIONAR PROBLEMA DE NECESIDAD DE DECLARAR FUNCION MAIN PARA QUE EL CODIGO SEA ACEPTADO Y TRADUCIDO
 
 PREGUNTAR QUE PARAMETROS SE DEBEN ACEPTAR COMO INPUT PARA UNA FUNCION, TIPO INTEGER, STRING, CHAR??? SI SE PUEDEN VARIOS TIPOS HAY QUE CAMBIAR 
-FUNC_PARAMS_DECLARATION Y EN VEZ DE PONER INTEGER, HAY QUE CREAR UN NUEVO NO TERMINAL LLAMADO func_declaration_types QUE CONTENGA INTEGER Y EL RESTO DE TIPOS ACEPTADOS
+FUNC_PARAMS_TYPES y meter todos los tipos correspondientes. Ahora está solamente tipo INT.
 
 PREGUNTAR SI AL LLAMAR A UNA FUNCION SE DEBE ASEGURAR QUE SE ESPECIFICAN TANTAS VARIABLES DE ENTRADA COMO INPUTS FUERON DECLARADOS PARA LA FUNCION
 RESOLVER CONFLICTO RETURN EN MEDIO DEL CODIGO Y RETURN AL FINAL, DA CONFLICTO REDUCE/REDUCE AL PONER UN RETURN EN LA ULTIMA LINEA
 NO SABE QUE REGLA APLICAR
+
+PREGUNTAR SI EN EL RETURN SE DEVUELVE UNA FUNCION SI HAY QUE COMPROBAR QUE LA FUNCION RETURNEADA DEVUELVA UN VALOR
 
 */
 
@@ -158,10 +159,9 @@ func_params_types:
 func_return_al_final:
         // Se ha considerado la posibilidad de tener funciones sin return
         {$$.code = gen_code("");}
-        | RETURN expresion ';' { sprintf(temp,"%s",$2.code);
-                                $$.code = gen_code(temp);}
-
-        ;
+        /* | RETURN expresion ';' { sprintf(temp,"%s",$2.code);
+                                $$.code = gen_code(temp);} */
+        ; 
 
 func_call:
     IDENTIF '('func_params_call')' { sprintf(temp, "(%s %s)",$1.code, $3.code);
@@ -257,8 +257,8 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
                                             }
                                             $$.code = gen_code(temp);}
                                             
-            /* | RETURN expresion ';' { sprintf(temp,"(return-from %s %s)",dentro_funcion, $2.code);
-                                    $$.code = gen_code(temp);} */
+            | RETURN expresion ';' { sprintf(temp,"(return-from %s %s)",dentro_funcion, $2.code);
+                                    $$.code = gen_code(temp);}
             
             | func_call ';' {$$ = $1;}
             
