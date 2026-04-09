@@ -17,7 +17,13 @@ PREGUNTAR QUE VALORES SON LOS PERMITIDOS PARA CADA UNO DE LOS CASE DEL SWITCH, N
 
 MIRAR SI HAY QUE SOLUCIONAR PROBLEMA DE NECESIDAD DE DECLARAR FUNCION MAIN PARA QUE EL CODIGO SEA ACEPTADO Y TRADUCIDO
 
-PREGUNTAR QUE PARAMETROS SE DEBEN ACEPTAR COMO INPUT PARA UNA FUNCION, TIPO INTEGER, STRING, CHAR???
+PREGUNTAR QUE PARAMETROS SE DEBEN ACEPTAR COMO INPUT PARA UNA FUNCION, TIPO INTEGER, STRING, CHAR??? SI SE PUEDEN VARIOS TIPOS HAY QUE CAMBIAR 
+FUNC_PARAMS_DECLARATION Y EN VEZ DE PONER INTEGER, HAY QUE CREAR UN NUEVO NO TERMINAL LLAMADO func_declaration_types QUE CONTENGA INTEGER Y EL RESTO DE TIPOS ACEPTADOS
+
+PREGUNTAR SI AL LLAMAR A UNA FUNCION SE DEBE ASEGURAR QUE SE ESPECIFICAN TANTAS VARIABLES DE ENTRADA COMO INPUTS FUERON DECLARADOS PARA LA FUNCION
+RESOLVER CONFLICTO RETURN EN MEDIO DEL CODIGO Y RETURN AL FINAL, DA CONFLICTO REDUCE/REDUCE AL PONER UN RETURN EN LA ULTIMA LINEA
+NO SABE QUE REGLA APLICAR
+
 */
 
 %{                          // SECCION 1 Declaraciones de C-Yacc
@@ -126,32 +132,55 @@ axioma:
 
 dec_func: 
 
-    IDENTIF '('func_params')' '{'{ strcpy(dentro_funcion, $1.code);} r_sentencia func_return { sprintf(temp,"(defun %s(%s)\n%s%s)",$1.code ,$3.code, $7.code, $8.code);
+    IDENTIF '('func_params_declaration')' '{'{ strcpy(dentro_funcion, $1.code);} r_sentencia func_return_al_final { sprintf(temp,"(defun %s(%s)\n%s%s)",$1.code ,$3.code, $7.code, $8.code);
                         $$.code = gen_code(temp);
                         strcpy(dentro_funcion, "global");}
         ;
-func_params:
+func_params_declaration:
         // lambda, no tenemos params 
         {$$.code = gen_code("");}
-        | INTEGER IDENTIF func_params_cont { sprintf(temp, "%s%s",$2.code, $3.code);
+        | func_params_types IDENTIF func_params_declaration_cont { sprintf(temp, "%s%s",$2.code, $3.code);
                             $$.code = gen_code(temp);}
 
             ;
 
-func_params_cont:
+func_params_declaration_cont:
         {$$.code = gen_code("");}
-        | ',' INTEGER IDENTIF func_params_cont { sprintf(temp," %s%s",$3.code, $4.code);
+        | ',' func_params_types IDENTIF func_params_declaration_cont { sprintf(temp," %s%s",$3.code, $4.code);
                                             $$.code = gen_code(temp);}
         ;
 
-func_return:
+func_params_types:
+
+    INTEGER {$$.code = gen_code("");}
+
+        ;
+func_return_al_final:
         // Se ha considerado la posibilidad de tener funciones sin return
         {$$.code = gen_code("");}
         | RETURN expresion ';' { sprintf(temp,"%s",$2.code);
                                 $$.code = gen_code(temp);}
 
-
         ;
+
+func_call:
+    IDENTIF '('func_params_call')' { sprintf(temp, "(%s %s)",$1.code, $3.code);
+                                $$.code = gen_code(temp);}
+        ;
+
+func_params_call:
+    // Puede ser que la función no tenga parámetros
+    {$$.code = gen_code("");}
+    | expresion func_params_call_cont { sprintf(temp, "%s%s",$1.code, $2.code);
+                                    $$.code = gen_code(temp);}
+        ;
+
+func_params_call_cont:
+    {$$.code = gen_code("");}
+    |',' expresion func_params_call_cont { sprintf(temp," %s%s",$2.code, $3.code);
+                                            $$.code = gen_code(temp);}
+        ;
+
 r_axioma: 
             { ; }
     | axioma { ; }
@@ -160,7 +189,7 @@ r_axioma:
 dec_glob:    | INTEGER dec_var {$$.code = $2.code;}    // Dejamos esta redenominación para usarla después como declarador de funciones
         ;
 
-dec_main:     MAIN '('func_params')' '{' {strcpy(dentro_funcion, "main");} r_sentencia func_return { sprintf(temp, "(defun %s (%s)\n%s%s)", $1.code, $3.code, $7.code, $8.code); 
+dec_main:     MAIN '('func_params_declaration')' '{' {strcpy(dentro_funcion, "main");} r_sentencia func_return_al_final { sprintf(temp, "(defun %s (%s)\n%s%s)", $1.code, $3.code, $7.code, $8.code); 
                                                 // Informamos que ya estamos dentro del main
                                                 strcpy(dentro_funcion,"global");
                                                 $$.code = gen_code(temp) ;          }
@@ -227,6 +256,12 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
                                                 sprintf(temp, "(case %s\n%s)", $3.code, $5.code);
                                             }
                                             $$.code = gen_code(temp);}
+                                            
+            /* | RETURN expresion ';' { sprintf(temp,"(return-from %s %s)",dentro_funcion, $2.code);
+                                    $$.code = gen_code(temp);} */
+            
+            | func_call ';' {$$ = $1;}
+            
         ;
 switch_cont:
     '{' CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 '}' { sprintf(temp,"(%s \n%s)%s",$3.code,$5.code,$8.code);
@@ -327,6 +362,7 @@ expresion:
         expr_condicional {$$ = $1;}
         | expr_others {$$ = $1;}
         | termino   { $$ = $1;}
+        | func_call {$$ = $1;}
         ;
 expr_condicional:                
              expresion AND expresion { sprintf (temp, "(and %s %s)", $1.code, $3.code) ;

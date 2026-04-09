@@ -8,7 +8,7 @@ es_par(){
         puts("es impar");
         ep = 0;
     }
-    return ep + 1;
+    
 }
 
 es_impar(int v, int c, int d){
@@ -23,9 +23,12 @@ es_impar(int v, int c, int d){
             printf("%s","Ocurrio un error");
             break;
     }
-    return v;
+    
 }
 
 main(int v){
+
+    es_impar(6, 7, 8);
+    printf("%d", es_impar(6,7,8,9));
     
 }
