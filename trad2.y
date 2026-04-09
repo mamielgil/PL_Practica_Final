@@ -25,7 +25,7 @@ int es_local(char *var_name) ;
 
 char *local_variables[2048]; // Tabla de variables locales
 int local_variables_counter = 0; // Contador de variable locales que tenemos
-char dentro_funcion[500] = "global"; // Variable para saber si nos encontramos dentro del main o no
+char dentro_funcion[500] = "global"; // Variable para saber en que scope nos encontramos
 
 char temp [2048] ;
 
