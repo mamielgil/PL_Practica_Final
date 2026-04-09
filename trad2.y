@@ -150,7 +150,7 @@ r_axioma:
 dec_glob:    | INTEGER dec_var {$$.code = $2.code;}    // Dejamos esta redenominación para usarla después como declarador de funciones
         ;
 
-dec_main:     MAIN '(' ')' '{' {strcpy(dentro_funcion, "main");} r_sentencia     { sprintf(temp, "(defun %s ()\n%s)", $1.code, $6.code); 
+dec_main:     MAIN '('func_params')' '{' {strcpy(dentro_funcion, "main");} r_sentencia     { sprintf(temp, "(defun %s (%s)\n%s)", $1.code, $3.code, $6.code); 
                                                 // Informamos que ya estamos dentro del main
                                                 strcpy(dentro_funcion,"global");
                                                 $$.code = gen_code(temp) ;          }

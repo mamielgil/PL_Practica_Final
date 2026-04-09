@@ -24,6 +24,6 @@ es_impar(int v, int c, int d){
     }
 }
 
-main(){
+main(int v){
     
 }
