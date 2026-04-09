@@ -121,7 +121,7 @@ typedef struct s_attr {
 
 
 axioma: 
-    dec_glob ';' { printf ("%s\n", $1.code) ; }
+    INTEGER dec_var ';' { printf ("%s\n", $2.code) ; } //declaración de variables globales
     r_axioma {;}
 
     | dec_main '}'{ printf("%s\n(main)", $1.code); }
@@ -188,9 +188,6 @@ func_params_call_cont:
 r_axioma: 
             { ; }
     | axioma { ; }
-        ;
-
-dec_glob:    | INTEGER dec_var {$$.code = $2.code;}    // Dejamos esta redenominación para usarla después como declarador de funciones
         ;
 
 dec_main:     MAIN '('func_params_declaration')' '{' {strcpy(dentro_funcion, "main"); local_variables_counter = 0;} r_sentencia func_return_al_final { sprintf(temp, "(defun %s (%s)\n%s%s)", $1.code, $3.code, $7.code, $8.code); 
@@ -359,7 +356,7 @@ continue_ID:   continue_comma { sprintf(temp, "0)%s", $1.code);
 
 continue_comma:  ',' dec_var { sprintf(temp,"\n%s",$2.code);
                             $$.code = gen_code(temp);}
-        | { $$.code = "";}
+        |  { $$.code = "";}
         ;     
 
 expresion:

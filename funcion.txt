@@ -1,6 +1,4 @@
-int a = 7;
-int b = 8,cx = 9;
-
+int a = 6;
 es_par(){
     int ep = 0;
     printf("%d",ep);
