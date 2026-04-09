@@ -95,6 +95,7 @@ typedef struct s_attr {
 %token CASE         //identifica la palabra clave CASE del switch
 %token BREAK        // identifica la palabra clave BREAK
 %token DEFAULT      // identifica la palabra clave DEFAULT del switch
+%token RETURN       // identifica la palabra clave RETURN para devolver valores en una función
 
 // DEFINIMOS AQUI LA ASOCIATIVIDAD DE LOS OPERADORES
 
@@ -125,7 +126,7 @@ axioma:
 
 dec_func: 
 
-    IDENTIF '('func_params')' '{'{ strcpy(dentro_funcion, $1.code);} r_sentencia { sprintf(temp,"(defun %s(%s)\n%s)",$1.code ,$3.code, $7.code);
+    IDENTIF '('func_params')' '{'{ strcpy(dentro_funcion, $1.code);} r_sentencia func_return { sprintf(temp,"(defun %s(%s)\n%s%s)",$1.code ,$3.code, $7.code, $8.code);
                         $$.code = gen_code(temp);
                         strcpy(dentro_funcion, "global");}
         ;
@@ -142,6 +143,15 @@ func_params_cont:
         | ',' INTEGER IDENTIF func_params_cont { sprintf(temp," %s%s",$3.code, $4.code);
                                             $$.code = gen_code(temp);}
         ;
+
+func_return:
+        // Se ha considerado la posibilidad de tener funciones sin return
+        {$$.code = gen_code("");}
+        | RETURN expresion ';' { sprintf(temp,"%s",$2.code);
+                                $$.code = gen_code(temp);}
+
+
+        ;
 r_axioma: 
             { ; }
     | axioma { ; }
@@ -150,7 +160,7 @@ r_axioma:
 dec_glob:    | INTEGER dec_var {$$.code = $2.code;}    // Dejamos esta redenominación para usarla después como declarador de funciones
         ;
 
-dec_main:     MAIN '('func_params')' '{' {strcpy(dentro_funcion, "main");} r_sentencia     { sprintf(temp, "(defun %s (%s)\n%s)", $1.code, $3.code, $6.code); 
+dec_main:     MAIN '('func_params')' '{' {strcpy(dentro_funcion, "main");} r_sentencia func_return { sprintf(temp, "(defun %s (%s)\n%s%s)", $1.code, $3.code, $7.code, $8.code); 
                                                 // Informamos que ya estamos dentro del main
                                                 strcpy(dentro_funcion,"global");
                                                 $$.code = gen_code(temp) ;          }
@@ -459,6 +469,7 @@ t_keyword keywords [] = { // define las palabras reservadas y los
     "case",         CASE,
     "break",        BREAK,
     "default",      DEFAULT,
+    "return",       RETURN,
     NULL,            0               // para marcar el fin de la tabla
 } ;
 
