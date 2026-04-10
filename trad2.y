@@ -345,7 +345,7 @@ continue_ID:   continue_comma { sprintf(temp, "0)%s", $1.code);
         | '=' '+' NUMBER continue_comma { sprintf(temp, "%d)%s", $3.value, $4.code);
                                     $$.code = gen_code(temp); }
         
-        | '[' NUMBER ']' { sprintf(temp, "(make-array %d))", $2.value);
+        | '[' NUMBER ']' continue_comma { sprintf(temp, "(make-array %d))%s", $2.value,$4.code);
                             $$.code = gen_code(temp); }
         ;
 
@@ -363,8 +363,14 @@ expresion:
         ;
 
 array_index: // Se utiliza para usar los contenidos del array
-    IDENTIF '[' NUMBER ']' { sprintf(temp, "(aref %s %d)", $1.code, $3.value); 
-                            $$.code = gen_code(temp);}
+    IDENTIF '[' NUMBER ']'      {if (es_local($1.code)) { // Regla para índices de arrays
+                                    // Es local se le añade main_
+                                    sprintf(temp, "(aref %s_%s %d)", dentro_funcion ,$1.code, $3.value);
+                                } else {
+                                    // Es global se usa el nombre de la variable original
+                                    sprintf(temp, "(aref %s %d)", $1.code, $3.value);
+                                }
+                                    $$.code = gen_code(temp);}
         ;
 
 expr_condicional:                
