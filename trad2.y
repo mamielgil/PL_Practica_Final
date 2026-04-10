@@ -100,7 +100,7 @@ axioma:
     INTEGER dec_var ';' { printf ("%s\n", $2.code) ; } //declaración de variables globales
     r_axioma {;}
 
-    | dec_main '}'{ printf("%s\n(main)", $1.code); }
+    | dec_main '}'{ printf("%s\n(main)\n", $1.code); }
 
     | dec_func '}' { printf("%s\n",$1.code); } r_axioma {;}
         ;
@@ -201,7 +201,7 @@ else_cont:   {$$.code = gen_code("");}
                                     $$.code = gen_code(temp);}
         ;
 
-sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
+sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) { // Regla para asignaciones de variables normales
                                                 // Es local se le añade main_
                                                 sprintf(temp, "(setf %s_%s %s)", dentro_funcion ,$1.code, $3.code);
                                             } else {
@@ -209,6 +209,16 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) {
                                                 sprintf(temp, "(setf %s %s)", $1.code, $3.code);
                                             }
                                             $$.code = gen_code(temp);}
+
+            | IDENTIF '[' NUMBER ']' '=' expresion ';' {if (es_local($1.code)) { // Regla para índices de arrays
+                                                            // Es local se le añade main_
+                                                            sprintf(temp, "(setf (aref %s_%s %d) %s)", dentro_funcion ,$1.code, $3.value, $6.code);
+                                                        } else {
+                                                            // Es global se usa el nombre de la variable original
+                                                            sprintf(temp, "(setf (aref %s %d) %s)", $1.code, $3.value, $6.code);
+                                                        }
+                                                        $$.code = gen_code(temp);}
+                                            
             | PRINTF '(' printf_param ')' ';' { sprintf (temp, "%s", $3.code) ;  
                                            $$.code = gen_code (temp) ; }
             | PUTS '(' STRING ')' ';'       {  sprintf(temp,"(print \"%s\")",$3.code);
@@ -329,11 +339,14 @@ continue_ID:   continue_comma { sprintf(temp, "0)%s", $1.code);
         | '=' NUMBER continue_comma { sprintf(temp, "%d)%s", $2.value, $3.code);
                                     $$.code = gen_code(temp); }
 
-        | '=' '-'NUMBER continue_comma { sprintf(temp, "-%d)%s", $3.value, $4.code);
+        | '=' '-' NUMBER continue_comma { sprintf(temp, "-%d)%s", $3.value, $4.code);
                                     $$.code = gen_code(temp); }
 
-        | '=' '+'NUMBER continue_comma { sprintf(temp, "%d)%s", $3.value, $4.code);
+        | '=' '+' NUMBER continue_comma { sprintf(temp, "%d)%s", $3.value, $4.code);
                                     $$.code = gen_code(temp); }
+        
+        | '[' NUMBER ']' { sprintf(temp, "(make-array %d))", $2.value);
+                            $$.code = gen_code(temp); }
         ;
 
 continue_comma:  ',' dec_var { sprintf(temp,"\n%s",$2.code);
@@ -346,7 +359,14 @@ expresion:
         | expr_others {$$ = $1;}
         | termino   { $$ = $1;}
         | func_call {$$ = $1;}
+        | array_index {$$ = $1;}
         ;
+
+array_index: // Se utiliza para usar los contenidos del array
+    IDENTIF '[' NUMBER ']' { sprintf(temp, "(aref %s %d)", $1.code, $3.value); 
+                            $$.code = gen_code(temp);}
+        ;
+
 expr_condicional:                
              expresion AND expresion { sprintf (temp, "(and %s %s)", $1.code, $3.code) ;
                                            $$.code = gen_code (temp) ;}
