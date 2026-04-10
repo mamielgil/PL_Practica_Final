@@ -15,6 +15,8 @@ main(){
     printf("hola", b);
     printf("%s", my_vector[4]);
     my_vector[5] = 123;
+    int b[5];
+    princ(b[1+2]);
     int a = 4;
     my_vector[10] = 1 + 2;
     return mondongo(my_vector[5]);
