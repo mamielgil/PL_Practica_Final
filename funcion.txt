@@ -40,7 +40,7 @@ es_impar(int v, int c, char d){
     
 }
 
-main(int v){
+main(){
 
     es_impar(6, 7, 8);
     printf("%d", es_impar(6,7,8,9));

@@ -166,7 +166,7 @@ r_axioma:
     | axioma { ; }
         ;
 
-dec_main:     MAIN '('func_params_declaration')' '{' {strcpy(dentro_funcion, "main"); local_variables_counter = 0;} r_sentencia func_return_al_final { sprintf(temp, "(defun %s (%s)\n%s%s)", $1.code, $3.code, $7.code, $8.code); 
+dec_main:     MAIN '('')' '{' {strcpy(dentro_funcion, "main"); local_variables_counter = 0;} r_sentencia func_return_al_final { sprintf(temp, "(defun %s ()\n%s%s)", $1.code, $6.code, $7.code); 
                                                 // Informamos que ya estamos dentro del main
                                                 strcpy(dentro_funcion,"global");
                                                 $$.code = gen_code(temp) ;          }
