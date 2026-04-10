@@ -18,6 +18,6 @@ main(){
     int b[5];
     princ(b[1+2]);
     int a = 4;
-    my_vector[10] = 1 + 2;
+    my_vector[9] = 1 + 2;
     return mondongo(my_vector[5]);
 }
