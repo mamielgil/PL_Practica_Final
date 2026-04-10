@@ -5,6 +5,8 @@ int a = 3;
 mondongo(int x){
     int b[5];
     printf("%d", b[1]);
+    int holita[6];
+    holita[0 && 1] = 8;
     return b[1];
 }
 
@@ -12,6 +14,7 @@ mondongo(int x){
 
 main(){
     int my_vector[5];
+    int prueba[6];
     printf("hola", b);
     printf("%s", my_vector[4]);
     my_vector[5] = 123;

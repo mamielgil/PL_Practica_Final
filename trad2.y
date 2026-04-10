@@ -210,12 +210,12 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) { // Regla 
                                             }
                                             $$.code = gen_code(temp);}
 
-            | IDENTIF '[' NUMBER ']' '=' expresion ';' {if (es_local($1.code)) { // Regla para índices de arrays
+            | IDENTIF '[' expresion ']' '=' expresion ';' {if (es_local($1.code)) { // Regla para índices de arrays
                                                             // Es local se le añade main_
-                                                            sprintf(temp, "(setf (aref %s_%s %d) %s)", dentro_funcion ,$1.code, $3.value, $6.code);
+                                                            sprintf(temp, "(setf (aref %s_%s %s) %s)", dentro_funcion ,$1.code, $3.code, $6.code);
                                                         } else {
                                                             // Es global se usa el nombre de la variable original
-                                                            sprintf(temp, "(setf (aref %s %d) %s)", $1.code, $3.value, $6.code);
+                                                            sprintf(temp, "(setf (aref %s %s) %s)", $1.code, $3.code, $6.code);
                                                         }
                                                         $$.code = gen_code(temp);}
                                             
