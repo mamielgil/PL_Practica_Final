@@ -17,10 +17,10 @@ main(){
     int prueba[6];
     printf("hola", b);
     printf("%s", my_vector[4]);
-    my_vector[5] = 123;
+    my_vector[4] = 123;
     int b[5];
     princ(b[1+2]);
     int a = 4;
-    my_vector[9] = 1 + 2;
-    return mondongo(my_vector[5]);
+    my_vector[0] = 1 + 2;
+    return mondongo(my_vector[4]);
 }
