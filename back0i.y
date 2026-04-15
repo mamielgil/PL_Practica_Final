@@ -69,27 +69,30 @@ r_exprSeq:    exprSeq                           { ; }
 expression1:  expression                        { ; }  // Lisp can evaluate arithmetical (and similar) expressions in REPL mode
                                                        // REPL Mode should print out the evaluated expressions ==> Future TODO for the Forth translation
 
-            | '(' SETQ IDENTIF number ')'       { /* */ }  // This is the declaration of a variable which in Forth has to be of global scope
+            | '(' SETQ IDENTIF number ')'       { printf("%d %s !\n", $4.value, $3.code);}  // This is the declaration of a variable which in Forth has to be of global scope
                                                                                                       
             | '(' SETF /* */ ')'                { /* */ }    // Using a variable as receiver requires adding the store operator (!) in Forth 
 
-            | '(' PRINT STRING ')'              { /* */ }
+            | '(' PRINT STRING ')'              { printf(".\" %s\"",$3.code);}
 
             | '(' PRINC /* */ ')'               { /* */ }    // Princ should be able to print both expreesions and strings
            
-            | '(' PROGN exprSeq ')'             { /* */ }
+            | '(' PROGN exprSeq ')'             { ; }
 
             | '(' MAIN ')'                      { printf (" main\n") ; } // call to the main function 
 
-            | '(' DEFUN MAIN                    { /* */ } 
-                '(' ')' exprSeq ')'             {  /* */ }
+            | '(' DEFUN MAIN                    { printf(": main"); } 
+                '(' ')' exprSeq ')'             {  printf(";"); }
+
+            | '(' DEFUN IDENTIF                   { printf(": %s", $3.code);} 
+                '(' ')' exprSeq ')'             {  printf (";") ; }
 
 // In real Lisp some expressions like if or Loop-While-Do are only permitted inside defun definitions (level 2 expressions) ==> Future ToDo
 // Level 1 and common expressions (arithmetic etc.) are also permitted inside a defun definition
 
-            | '(' LOOP WHILE                    { /* */  }  
-                 expression                     {  /* */ } 
-                 DO exprSeq ')'                 {  /* */ }
+            | '(' LOOP WHILE                    { printf("begin ");}  
+                 expression                     {  printf("while"); } 
+                 DO exprSeq ')'                 {  printf("repeat"); }
 
             | '(' ifHead  expression1 ')'       { printf (" THEN\n") ; }     // If Expression then Expression1
                                                                              // ifHead is used to avoid conflicts through partial factorization
