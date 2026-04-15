@@ -172,9 +172,24 @@ dec_main:     MAIN '('')' '{' {strcpy(dentro_funcion, "main"); local_variables_c
                                                 $$.code = gen_code(temp) ;          }
         ;
 
-r_sentencia:                          {$$.code = gen_code("");}
+r_sentencia:                         {$$.code = gen_code("");}
             |  sentencia r_sentencia   { sprintf(temp, "%s\n%s", $1.code, $2.code);
                                                                 $$.code = gen_code(temp);}
+            | RETURN expresion ';' r_sentencia {
+                                                if(strlen($4.code) == 0){
+                                                    sprintf(temp,"%s", $2.code);
+                                                }else{
+                                                     sprintf(temp,"(return-from %s %s)\n%s",dentro_funcion, $2.code, $4.code);
+                                                }
+                                                $$.code = gen_code(temp);}
+        ;
+
+r_sentencia_anidada:        {$$.code = gen_code("");}
+            |  sentencia r_sentencia_anidada   { sprintf(temp, "%s\n%s", $1.code, $2.code);
+                                                                $$.code = gen_code(temp);}
+            | RETURN expresion ';' r_sentencia_anidada {sprintf(temp,"(return-from %s %s)\n%s",dentro_funcion, $2.code, $4.code);
+                                                $$.code = gen_code(temp);}
+            ; 
         ;
 
 if_cont: '{' if_sentencia '}' else_cont { sprintf(temp,"\n%s\n%s", $2.code, $4.code);
@@ -182,19 +197,26 @@ if_cont: '{' if_sentencia '}' else_cont { sprintf(temp,"\n%s\n%s", $2.code, $4.c
 
         ;
 
+if_instrucciones:
+        sentencia {$$.code = $1.code;}
+        | RETURN expresion';' {sprintf(temp,"(return-from %s %s)",dentro_funcion, $2.code);
+                                $$.code = gen_code(temp);}
+        ;
+
 if_sentencia: 
-        sentencia { $$.code = $1.code;}
+         if_instrucciones { $$.code = $1.code;}
         | multiples_sentencias { sprintf(temp, "(progn %s)",$1.code);
                                 $$.code = gen_code(temp);}
         ;
 
 multiples_sentencias:
-        sentencia sentencia { sprintf(temp, "%s\n%s",$1.code, $2.code);
+         if_instrucciones if_instrucciones { sprintf(temp, "%s\n%s",$1.code, $2.code);
                             $$.code = gen_code(temp);}
 
-        | multiples_sentencias sentencia { sprintf(temp, "%s\n%s",$1.code, $2.code);
+        | multiples_sentencias if_instrucciones { sprintf(temp, "%s\n%s",$1.code, $2.code);
                             $$.code = gen_code(temp);}
         ;
+
 
 else_cont:   {$$.code = gen_code("");}
         | ELSE '{' if_sentencia '}' { sprintf(temp, "%s\n", $3.code);
@@ -251,16 +273,16 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) { // Regla 
             
         ;
 switch_cont:
-    '{' CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 '}' { sprintf(temp,"(%s \n%s)%s",$3.code,$5.code,$8.code);
+    '{' CASE switch_val ':' r_sentencia_anidada BREAK ';' switch_cont2 '}' { sprintf(temp,"(%s \n%s)%s",$3.code,$5.code,$8.code);
                                                                     $$.code = gen_code(temp);}
         ;
 
 switch_cont2:
-    {$$.code = gen_code("");}
-    | DEFAULT ':' r_sentencia BREAK';' { sprintf(temp,"(otherwise \n%s)\n",$3.code);
+   {$$.code = gen_code("");}
+    | DEFAULT ':' r_sentencia_anidada BREAK';' { sprintf(temp,"(otherwise \n%s)\n",$3.code);
                                         $$.code = gen_code(temp);}
 
-    | CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 { sprintf(temp,"\n(%s \n%s)\n%s",$2.code,$4.code,$7.code);
+    | CASE switch_val ':' r_sentencia_anidada BREAK ';' switch_cont2 { sprintf(temp,"\n(%s \n%s)\n%s",$2.code,$4.code,$7.code);
                                                     $$.code = gen_code(temp);}
         ;
 
@@ -301,7 +323,7 @@ for_var: IDENTIF '=' expresion      { if(es_local($1.code)){
                                     }
         ;
 while_cont:
-     '{' r_sentencia '}' {$$.code = $2.code;}
+     '{' r_sentencia_anidada '}' {$$.code = $2.code;}
         ;
 
 printf_param:
