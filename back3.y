@@ -1,3 +1,8 @@
+/*
+Miguel Amiel Chen Xu Grupo 81 Equipo 107
+100525454@alumnos.uc3m.es 100522395@alumnos.uc3m.es
+*/
+
 %{                          // SECTION 1 Declarations for C-Bison
 #include <stdio.h>
 #include <ctype.h>            // tolower()
@@ -44,6 +49,12 @@ typedef struct s_attr {
 %token PRINT  
 %token PRINC
 %token AND
+%token OR
+%token NOT
+%token NOT_EQUAL
+%token LESS_EQUAL
+%token GREATER_EQUAL
+%token MOD
 %token IF 
 %token PROGN
 
@@ -69,30 +80,30 @@ r_exprSeq:    exprSeq                           { ; }
 expression1:  expression                        { ; }  // Lisp can evaluate arithmetical (and similar) expressions in REPL mode
                                                        // REPL Mode should print out the evaluated expressions ==> Future TODO for the Forth translation
 
-            | '(' SETQ IDENTIF number ')'       { printf("%d %s !\n", $4.value, $3.code);}  // This is the declaration of a variable which in Forth has to be of global scope
+            | '(' SETQ IDENTIF number ')'       { printf(" %d variable %s %s !\n", $4.value, $3.code, $3.code);}  // This is the declaration of a variable which in Forth has to be of global scope
                                                                                                       
-            | '(' SETF /* */ ')'                { /* */ }    // Using a variable as receiver requires adding the store operator (!) in Forth 
+            | '(' SETF IDENTIF expression ')'    { printf(" %s !\n", $3.code);}    // Using a variable as receiver requires adding the store operator (!) in Forth 
 
-            | '(' PRINT STRING ')'              { printf(".\" %s\"",$3.code);}
+            | '(' PRINT STRING ')'              { printf(" .\" %s\" cr",$3.code);}
 
-            | '(' PRINC /* */ ')'               { /* */ }    // Princ should be able to print both expreesions and strings
+            | '(' PRINC princ_param ')'          { ; }    // Princ should be able to print both expreesions and strings
            
             | '(' PROGN exprSeq ')'             { ; }
 
             | '(' MAIN ')'                      { printf (" main\n") ; } // call to the main function 
 
-            | '(' DEFUN MAIN                    { printf(": main"); } 
-                '(' ')' exprSeq ')'             {  printf(";"); }
+            | '(' DEFUN MAIN                    { printf(": main "); } 
+                '(' ')' exprSeq ')'             {  printf(" ;\n"); }
 
-            | '(' DEFUN IDENTIF                   { printf(": %s", $3.code);} 
-                '(' ')' exprSeq ')'             {  printf (";") ; }
+            | '(' DEFUN IDENTIF                   { printf(": %s ", $3.code);} 
+                '(' ')' exprSeq ')'             {  printf (" ;\n") ; }
 
 // In real Lisp some expressions like if or Loop-While-Do are only permitted inside defun definitions (level 2 expressions) ==> Future ToDo
 // Level 1 and common expressions (arithmetic etc.) are also permitted inside a defun definition
 
-            | '(' LOOP WHILE                    { printf("begin ");}  
-                 expression                     {  printf("while"); } 
-                 DO exprSeq ')'                 {  printf("repeat"); }
+            | '(' LOOP WHILE                    { printf(" begin ");}  
+                 expression                     {  printf(" while "); } 
+                 DO exprSeq ')'                 {  printf(" repeat "); }
 
             | '(' ifHead  expression1 ')'       { printf (" THEN\n") ; }     // If Expression then Expression1
                                                                              // ifHead is used to avoid conflicts through partial factorization
@@ -101,6 +112,10 @@ expression1:  expression                        { ; }  // Lisp can evaluate arit
                  expression1 ')'                {  printf (" THEN\n") ; }    // more than one expression per then or else branch are only allowed nesting them within a PROGN expression
             ;
 
+princ_param:
+        expression { printf(" . ");}
+        | STRING { printf(".\" %s\"", $1.code);}
+            ;
 
 ifHead:       IF expression                     { printf (" IF ") ; }        // Real Lisp restricts if conditions to Boolean type expressions (excluding base operands?) ==> Future TOOD
             ;
@@ -111,6 +126,28 @@ expression:   operand                                   { ; }                // 
             | '(' '-' expression expression ')'         { printf (" - ") ; }      // binary minus operator 
 
 /* - * / MOD AND OR > < GE LE ... NOT */
+            | '(' AND  expression expression ')' { printf(" %s ", $2.code);}
+
+            | '(' OR   expression expression ')' { printf(" %s ", $2.code);}
+
+            | '(' NOT  expression ')'            { printf(" 0= ");}
+
+            | '('NOT_EQUAL expression expression ')'{ printf(" = 0= ");}
+
+            | '(' '=' expression expression ')'    { printf(" = ");}
+
+            | '(' '<' expression expression ')' { printf(" < ");}
+
+            | '(' LESS_EQUAL expression expression ')' { printf(" %s ", $2.code);}
+
+            | '(' '>' expression expression ')' { printf(" > ");}
+
+            | '(' GREATER_EQUAL expression expression ')' { printf(" %s ", $2.code);}
+
+            | '(' MOD expression expression')' { printf(" %s ", $2.code);}
+            | '(' '+' expression expression ')'  { printf(" + ");}
+            | '(' '*' expression expression ')'  { printf(" * ");}
+            | '(' '/' expression expression ')'  { printf(" / ");}
 
             | '(' '-' expression ')'                    { printf (" negate ") ; } // Unary minus operator in Lisp
             ;
@@ -198,11 +235,19 @@ t_keyword keywords [] = {     // define the keywords
     "main",        MAIN,      // and their associated token  
     "defun",       DEFUN,
     "print",       PRINT,
+    "setq",        SETQ,
+    "setf",        SETF,
     "princ",       PRINC,
     "loop",        LOOP,
     "while",       WHILE,
     "do",          DO,
     "and",         AND,
+    "or",          OR, 
+    "not",         NOT,
+    "/=",          NOT_EQUAL,
+    "<=",          LESS_EQUAL,
+    ">=",          GREATER_EQUAL,
+    "mod",         MOD,
     "if",          IF,
     "progn",       PROGN,
     NULL,          0          // 0 to mark the end of the table

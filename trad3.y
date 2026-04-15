@@ -26,7 +26,7 @@ int es_local(char *var_name) ;
 char *local_variables[2048]; // Tabla de variables locales
 int local_variables_counter = 0; // Contador de variable locales que tenemos
 char dentro_funcion[500] = "global"; // Variable para saber en que scope nos encontramos
-
+int dentro_if = 0;
 char temp [2048] ;
 
 // Abstract Syntax Tree (AST) Node Structure
@@ -100,7 +100,7 @@ axioma:
     INTEGER dec_var ';' { printf ("%s\n", $2.code) ; } //declaración de variables globales
     r_axioma {;}
 
-    | dec_main '}'{ printf("%s\n(main)\n", $1.code); }
+    | dec_main '}'{ printf("%s\n", $1.code); }
 
     | dec_func '}' { printf("%s\n",$1.code); } r_axioma {;}
         ;
@@ -111,7 +111,7 @@ axioma:
 
 dec_func: 
 
-    IDENTIF '('func_params_declaration')' '{'{ strcpy(dentro_funcion, $1.code); local_variables_counter = 0;} r_sentencia func_return_al_final { sprintf(temp,"(defun %s(%s)\n%s%s)",$1.code ,$3.code, $7.code, $8.code);
+    IDENTIF '('func_params_declaration')' '{'{ strcpy(dentro_funcion, $1.code); local_variables_counter = 0;} r_sentencia { sprintf(temp,"(defun %s(%s)\n%s)",$1.code ,$3.code, $7.code);
                         $$.code = gen_code(temp);
                         strcpy(dentro_funcion, "global");}
         ;
@@ -136,12 +136,6 @@ func_params_types:
     | CHAR  {$$.code = gen_code("");}
 
         ;
-func_return_al_final:
-        // Se ha considerado la posibilidad de tener funciones sin return
-        {$$.code = gen_code("");}
-        /* | RETURN expresion ';' { sprintf(temp,"%s",$2.code);
-                                $$.code = gen_code(temp);} */
-        ; 
 
 func_call:
     IDENTIF '('func_params_call')' { sprintf(temp, "(%s %s)",$1.code, $3.code);
@@ -166,7 +160,7 @@ r_axioma:
     | axioma { ; }
         ;
 
-dec_main:     MAIN '('')' '{' {strcpy(dentro_funcion, "main"); local_variables_counter = 0;} r_sentencia func_return_al_final { sprintf(temp, "(defun %s ()\n%s%s)", $1.code, $6.code, $7.code); 
+dec_main:     MAIN '('')' '{' {strcpy(dentro_funcion, "main"); local_variables_counter = 0;} r_sentencia { sprintf(temp, "(defun %s ()\n%s)", $1.code, $6.code); 
                                                 // Informamos que ya estamos dentro del main
                                                 strcpy(dentro_funcion,"global");
                                                 $$.code = gen_code(temp) ;          }
@@ -192,7 +186,7 @@ r_sentencia_anidada:        {$$.code = gen_code("");}
             ; 
         ;
 
-if_cont: '{' if_sentencia '}' else_cont { sprintf(temp,"\n%s\n%s", $2.code, $4.code);
+if_cont: {dentro_if = 1;}'{' if_sentencia '}' else_cont { sprintf(temp,"\n%s\n%s", $3.code, $5.code);
                                         $$.code = gen_code(temp);}
 
         ;
@@ -250,7 +244,8 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) { // Regla 
                              $$.code = gen_code(temp);}
 
             | IF expresion if_cont          { sprintf(temp, "(%s %s %s)",$1.code, $2.code, $3.code);
-                                                $$.code = gen_code(temp);}
+                                                $$.code = gen_code(temp);
+                                                dentro_if = 0;}
 
             | INTEGER dec_var ';' {$$.code = $2.code;} // DECLARACIÓN DE VARIABLES LOCALES
 
@@ -325,7 +320,11 @@ while_cont:
 
 printf_param:
     
-    STRING ',' printf_elem printf_cont {sprintf(temp,"%s%s", $3.code, $4.code);
+    STRING ',' printf_elem printf_cont { if((strcmp($4.code, "") != 0) && (dentro_if == 1)){
+                                            sprintf(temp, "(progn %s%s)", $3.code, $4.code);
+                                        }else{
+                                            sprintf(temp,"%s%s", $3.code, $4.code);
+                                        }
                                         $$.code = gen_code(temp);}
         ;
 
