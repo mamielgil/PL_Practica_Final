@@ -265,9 +265,6 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) { // Regla 
                                                 sprintf(temp, "(case %s\n%s)", $3.code, $5.code);
                                             }
                                             $$.code = gen_code(temp);}
-                                            
-            | RETURN expresion ';' { sprintf(temp,"(return-from %s %s)",dentro_funcion, $2.code);
-                                    $$.code = gen_code(temp);}
             
             | func_call ';' {$$ = $1;}
             
