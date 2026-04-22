@@ -100,9 +100,9 @@ axioma:
     INTEGER dec_var ';' { printf ("%s\n", $2.code) ; } //declaración de variables globales
     r_axioma {;}
 
-    | dec_main '}'{ printf("%s\n", $1.code); }
+    | dec_main '}' {;}
 
-    | dec_func '}' { printf("%s\n",$1.code); } r_axioma {;}
+    | dec_func '}' r_axioma {;}
         ;
 
   
@@ -111,8 +111,7 @@ axioma:
 
 dec_func: 
 
-    IDENTIF '('func_params_declaration')' '{'{ strcpy(dentro_funcion, $1.code); local_variables_counter = 0;} r_sentencia { sprintf(temp,"(defun %s(%s)\n%s)",$1.code ,$3.code, $7.code);
-                        $$.code = gen_code(temp);
+    IDENTIF '('func_params_declaration')' '{'{ strcpy(dentro_funcion, $1.code); local_variables_counter = 0;} r_sentencia { printf("(defun %s(%s)\n%s)\n",$1.code ,$3.code, $7.code);
                         strcpy(dentro_funcion, "global");}
         ;
 func_params_declaration:
@@ -160,10 +159,10 @@ r_axioma:
     | axioma { ; }
         ;
 
-dec_main:     MAIN '('')' '{' {strcpy(dentro_funcion, "main"); local_variables_counter = 0;} r_sentencia { sprintf(temp, "(defun %s ()\n%s)", $1.code, $6.code); 
+dec_main:     MAIN '('')' '{' {strcpy(dentro_funcion, "main"); local_variables_counter = 0;} r_sentencia { printf("(defun %s ()\n%s)\n", $1.code, $6.code); 
                                                 // Informamos que ya estamos dentro del main
                                                 strcpy(dentro_funcion,"global");
-                                                $$.code = gen_code(temp) ;          }
+                                                                              }
         ;
 
 r_sentencia:                         {$$.code = gen_code("");}
@@ -204,14 +203,18 @@ if_sentencia:
         ;
 
 multiples_sentencias:
-         if_instrucciones if_instrucciones { sprintf(temp, "%s\n%s",$1.code, $2.code);
+         if_instrucciones multiples_sentencias_cont { sprintf(temp, "%s\n%s",$1.code, $2.code);
                             $$.code = gen_code(temp);}
 
-        | multiples_sentencias if_instrucciones { sprintf(temp, "%s\n%s",$1.code, $2.code);
-                            $$.code = gen_code(temp);}
         ;
 
 
+multiples_sentencias_cont:
+
+        if_instrucciones {$$ = $1;}
+
+        | multiples_sentencias{ $$ = $1;}
+        ;
 else_cont:   {$$.code = gen_code("");}
         | ELSE '{' if_sentencia '}' { sprintf(temp, "%s\n", $3.code);
                                     $$.code = gen_code(temp);}
