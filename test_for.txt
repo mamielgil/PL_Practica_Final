@@ -1,0 +1,15 @@
+int a = 1;
+
+main(){
+    if(a == 1){
+        printf("Hola manin", "Hola manin");
+        for(x = 10; x > 0; DEC(x)){
+            puts("Hola");
+        }
+    }else{
+        for(c = 6; c > 0; DEC(c)){
+            puts("Wuachin");
+        }
+    }
+}
+//@ (main)
