@@ -252,7 +252,11 @@ sentencia:    IDENTIF '=' expresion ';'      {if (es_local($1.code)) { // Regla 
 
             | INTEGER dec_var ';' {$$.code = $2.code;} // DECLARACIÓN DE VARIABLES LOCALES
 
-            | FOR '(' for_var ';' expr_condicional ';' for_operator { sprintf(temp,"%s\n(loop while %s do\n%s)", $3.code, $5.code, $7.code);
+            | FOR '(' for_var ';' expr_condicional ';' for_operator { if(dentro_if == 1){
+                                                                        sprintf(temp,"%s\n(loop while %s do\n%s))", $3.code, $5.code, $7.code);
+                                                                    }else{
+                                                                        sprintf(temp,"%s\n(loop while %s do\n%s)", $3.code, $5.code, $7.code);
+                                                                    }
                                                                     $$.code = gen_code(temp);}
 
             | SWITCH '('IDENTIF')' switch_cont {if (es_local($3.code)) {
@@ -308,11 +312,19 @@ for_operator:
         ;   
 
 for_var: IDENTIF '=' expresion      { if(es_local($1.code)){
-                                    sprintf(temp, "(setf %s_%s %s)", dentro_funcion, $1.code, $3.code);
-                                    
+                                        if(dentro_if == 0){ 
+                                            sprintf(temp, "(setf %s_%s %s)", dentro_funcion, $1.code, $3.code);
+                                        }else{
+                                            sprintf(temp, "(progn (setf %s_%s %s)", dentro_funcion, $1.code, $3.code);
+                                        }
                                     }else{
-                                        sprintf(temp, "(setq %s_%s %s)", dentro_funcion, $1.code, $3.code);
-                                        añadir_variable_local($1.code);
+                                        if(dentro_if == 0){ 
+                                            sprintf(temp, "(setq %s_%s %s)", dentro_funcion, $1.code, $3.code);
+                                            añadir_variable_local($1.code);
+                                        }else{
+                                            sprintf(temp, "(progn (setq %s_%s %s)", dentro_funcion, $1.code, $3.code);
+                                            añadir_variable_local($1.code);
+                                        }
                                     }
                                     $$.code = gen_code(temp);
                                     }
