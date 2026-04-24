@@ -2,6 +2,7 @@ int a = 10;
 
 main(){
 
+    int b = 50;
     if(a < 10){
         puts("Hola");
     }
@@ -26,6 +27,8 @@ main(){
         puts("Hola");
         puts("Hola manin2");
     }
+
+    printf("Me salto", a, b);
 
 
 

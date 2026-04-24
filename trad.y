@@ -196,7 +196,7 @@ r_sentencia:
         ;
 
 
-if_cont: '{' r_sentencia '}' else_cont      {if(strlen($4.code) != 0){ 
+if_cont: '{' r_sentencia_anidada '}' else_cont      {if(strlen($4.code) != 0){ 
                                                 sprintf(temp,"\n(progn\n%s)\n(progn\n%s)", $2.code, $4.code);
                                             }else{
                                                 sprintf(temp,"\n(progn\n%s)\n", $2.code);
@@ -204,10 +204,17 @@ if_cont: '{' r_sentencia '}' else_cont      {if(strlen($4.code) != 0){
                                             $$.code = gen_code(temp);}
         ;
 
+r_sentencia_anidada:        {$$.code = gen_code("");}
+            |  sentencia r_sentencia_anidada   { sprintf(temp, "%s\n%s", $1.code, $2.code);
+                                                                $$.code = gen_code(temp);}
+            | RETURN expresion ';' r_sentencia_anidada {sprintf(temp,"(return-from %s %s)\n%s",dentro_funcion, $2.code, $4.code);
+                                                $$.code = gen_code(temp);}
+        ; 
+
 
 else_cont:                          {$$.code = gen_code("");}
 
-        | ELSE '{' r_sentencia '}'  {sprintf(temp, "%s", $3.code);
+        | ELSE '{' r_sentencia_anidada '}'  {sprintf(temp, "%s", $3.code);
                                     $$.code = gen_code(temp);}
         ;
 
@@ -262,7 +269,7 @@ sentencia:
 
 
 switch_cont:
-        '{' CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 '}'  {sprintf(temp,"(%s \n%s)%s",$3.code,$5.code,$8.code);
+        '{' CASE switch_val ':' r_sentencia_anidada BREAK ';' switch_cont2 '}'  {sprintf(temp,"(%s \n%s)%s",$3.code,$5.code,$8.code);
                                                                         $$.code = gen_code(temp);}
         ;
 
@@ -270,10 +277,10 @@ switch_cont:
 switch_cont2:
         {$$.code = gen_code("");}
 
-        | DEFAULT ':' r_sentencia BREAK';'                          {sprintf(temp,"(otherwise \n%s)\n", $3.code);
+        | DEFAULT ':' r_sentencia_anidada BREAK';'                          {sprintf(temp,"(otherwise \n%s)\n", $3.code);
                                                                     $$.code = gen_code(temp);}
 
-        | CASE switch_val ':' r_sentencia BREAK ';' switch_cont2    {sprintf(temp,"\n(%s \n%s)\n%s", $2.code, $4.code, $7.code);
+        | CASE switch_val ':' r_sentencia_anidada BREAK ';' switch_cont2    {sprintf(temp,"\n(%s \n%s)\n%s", $2.code, $4.code, $7.code);
                                                                     $$.code = gen_code(temp);}
         ;
 
@@ -336,7 +343,7 @@ for_cont2:
 
 
 while_cont:
-        '{' r_sentencia '}' {$$.code = $2.code;}
+        '{' r_sentencia_anidada '}' {$$.code = $2.code;}
         ;
 
 
