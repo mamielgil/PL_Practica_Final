@@ -190,66 +190,24 @@ r_sentencia:
         | RETURN expresion ';' r_sentencia  {if(strlen($4.code) == 0){
                                                 sprintf(temp,"%s", $2.code);
                                             }else{
-                                                sprintf(temp,"(return-from %s %s)\n%s",dentro_funcion, $2.code, $4.code);
+                                                sprintf(temp,"(return-from %s %s)\n%s", dentro_funcion, $2.code, $4.code);
                                             }
                                             $$.code = gen_code(temp);}
         ;
 
 
-r_sentencia_anidada:                                    
-                                                    {$$.code = gen_code("");}
-
-        | sentencia r_sentencia_anidada             {sprintf(temp, "%s\n%s", $1.code, $2.code);
-                                                    $$.code = gen_code(temp);}
-
-        | RETURN expresion ';' r_sentencia_anidada  {sprintf(temp,"(return-from %s %s)\n%s",dentro_funcion, $2.code, $4.code);
-                                                    $$.code = gen_code(temp);}
-        ;
-
-
-if_cont: '{' if_sentencia '}' else_cont     {sprintf(temp,"\n%s\n%s", $3.code, $5.code);
+if_cont: '{' r_sentencia '}' else_cont      {if(strlen($4.code) != 0){ 
+                                                sprintf(temp,"\n(progn\n%s)\n(progn\n%s)", $2.code, $4.code);
+                                            }else{
+                                                sprintf(temp,"\n(progn\n%s)\n", $2.code);
+                                            }
                                             $$.code = gen_code(temp);}
-
-        ;
-
-
-if_instrucciones:
-        sentencia               {$$.code = $1.code;}
-
-        | RETURN expresion';'   {sprintf(temp,"(return-from %s %s)",dentro_funcion, $2.code);
-                                $$.code = gen_code(temp);}
-        ;
-
-
-if_sentencia: 
-        if_instrucciones        {if ((strstr($1.code, "setq") != NULL) && (strstr($1.code, "loop") != NULL)){ 
-                                    sprintf(temp,"(progn %s)\n", $1.code);
-                                    $$.code = gen_code(temp);
-                                }else{
-                                    $$.code = $1.code;
-                                }}
-
-        | multiples_sentencias  {sprintf(temp, "(progn %s)", $1.code);
-                                $$.code = gen_code(temp);}
-        ;
-
-
-multiples_sentencias:
-         if_instrucciones multiples_sentencias_cont     {sprintf(temp, "%s\n%s",$1.code, $2.code);
-                                                        $$.code = gen_code(temp);}
-        ;
-
-
-multiples_sentencias_cont:
-        if_instrucciones        {$$ = $1;}
-
-        | multiples_sentencias  {$$ = $1;}
         ;
 
 
 else_cont:                          {$$.code = gen_code("");}
 
-        | ELSE '{' if_sentencia '}' { sprintf(temp, "%s\n", $3.code);
+        | ELSE '{' r_sentencia '}'  {sprintf(temp, "%s", $3.code);
                                     $$.code = gen_code(temp);}
         ;
 
@@ -304,19 +262,19 @@ sentencia:
 
 
 switch_cont:
-        '{' CASE switch_val ':' r_sentencia_anidada BREAK ';' switch_cont2 '}'  { sprintf(temp,"(%s \n%s)%s",$3.code,$5.code,$8.code);
-                                                                                $$.code = gen_code(temp);}
+        '{' CASE switch_val ':' r_sentencia BREAK ';' switch_cont2 '}'  {sprintf(temp,"(%s \n%s)%s",$3.code,$5.code,$8.code);
+                                                                        $$.code = gen_code(temp);}
         ;
 
 
 switch_cont2:
         {$$.code = gen_code("");}
 
-        | DEFAULT ':' r_sentencia_anidada BREAK';'                          {sprintf(temp,"(otherwise \n%s)\n", $3.code);
-                                                                            $$.code = gen_code(temp);}
+        | DEFAULT ':' r_sentencia BREAK';'                          {sprintf(temp,"(otherwise \n%s)\n", $3.code);
+                                                                    $$.code = gen_code(temp);}
 
-        | CASE switch_val ':' r_sentencia_anidada BREAK ';' switch_cont2    {sprintf(temp,"\n(%s \n%s)\n%s", $2.code, $4.code, $7.code);
-                                                                            $$.code = gen_code(temp);}
+        | CASE switch_val ':' r_sentencia BREAK ';' switch_cont2    {sprintf(temp,"\n(%s \n%s)\n%s", $2.code, $4.code, $7.code);
+                                                                    $$.code = gen_code(temp);}
         ;
 
 
@@ -333,18 +291,18 @@ switch_val:
 
 
 for_operator:
-        INC'('IDENTIF')'')' while_cont      {if(es_local($3.code)){ 
-                                                sprintf(temp,"%s\n(setf %s_%s (+ %s_%s 1))", $6.code, dentro_funcion, $3.code, dentro_funcion, $3.code);
+        INC '('IDENTIF')'')'  for_cont      {if(es_local($3.code)){ 
+                                                sprintf(temp,"%s(setf %s_%s (+ %s_%s 1))", $6.code, dentro_funcion, $3.code, dentro_funcion, $3.code);
                                             }else{
-                                                sprintf(temp,"%s\n(setf %s (+ %s 1))",$6.code, $3.code, $3.code);
+                                                sprintf(temp,"%s(setf %s (+ %s 1))",$6.code, $3.code, $3.code);
                                             }
                                             $$.code = gen_code(temp);
                                             }
 
-        | DEC '('IDENTIF')'')' while_cont   {if(es_local($3.code)){ 
-                                            sprintf(temp,"%s\n(setf %s_%s (- %s_%s 1))", $6.code, dentro_funcion, $3.code, dentro_funcion, $3.code);
+        | DEC '('IDENTIF')'')' for_cont     {if(es_local($3.code)){ 
+                                            sprintf(temp,"%s(setf %s_%s (- %s_%s 1))", $6.code, dentro_funcion, $3.code, dentro_funcion, $3.code);
                                             }else{
-                                                sprintf(temp,"%s\n(setf %s (- %s 1))", $6.code, $3.code, $3.code);
+                                                sprintf(temp,"%s(setf %s (- %s 1))", $6.code, $3.code, $3.code);
                                             }
                                             $$.code = gen_code(temp);
                                             }
@@ -355,16 +313,30 @@ for_var:
         IDENTIF '=' expresion       {if(es_local($1.code)){
                                         sprintf(temp, "(setf %s_%s %s)", dentro_funcion, $1.code, $3.code);
                                     }else{
-                                        sprintf(temp, "(setq %s_%s %s)", dentro_funcion, $1.code, $3.code);
-                                        añadir_variable_local($1.code);
+                                        sprintf(temp, "(setf %s %s)", $1.code, $3.code);
                                     }
                                     $$.code = gen_code(temp);
                                     }
         ;
 
+for_cont:
+        '{' for_cont2 '}' {$$.code = $2.code;}
+        ;
+
+
+for_cont2:
+                                            {$$.code = gen_code("\n");}
+
+        | sentencia for_cont2               {sprintf(temp,"%s%s", $1.code, $2.code);
+                                            $$.code = gen_code(temp);}
+
+        | RETURN expresion ';' for_cont2    {sprintf(temp,"(return-from %s %s)\n%s", dentro_funcion, $2.code, $4.code);
+                                            $$.code = gen_code(temp);}
+        ;
+
 
 while_cont:
-        '{' r_sentencia_anidada '}' {$$.code = $2.code;}
+        '{' r_sentencia '}' {$$.code = $2.code;}
         ;
 
 
@@ -478,6 +450,7 @@ expr_condicional:
                                             $$.code = gen_code (temp);}
         ;
 
+
 expr_others:  
         expresion '%' expresion         {sprintf (temp, "(mod %s %s)", $1.code, $3.code) ;
                                         $$.code = gen_code (temp) ;}
@@ -495,6 +468,7 @@ expr_others:
                                         $$.code = gen_code (temp) ;}
         ;
 
+
 termino:        
         operando                                {$$ = $1;}       
 
@@ -506,6 +480,7 @@ termino:
         |   '!' operando                        {sprintf (temp, "(not %s)", $2.code) ;
                                                 $$.code = gen_code (temp);}  
         ;
+
 
 operando:       
         IDENTIF                 {if (es_local($1.code)) {
